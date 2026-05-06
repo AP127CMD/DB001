@@ -364,7 +364,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
         </div>
       </div>
       <div class="d127-side">
-        <div class="d127-panel"><div class="d127-h"><span class="d127-t">Pace Bands</span><span class="d127-s">completed lesson ranges</span></div><div class="d127-body" id="d127-bands"></div></div>
+        <div class="d127-panel"><div class="d127-h"><span class="d127-t">Pace Bands</span><span class="d127-s">leader → lagger spread</span></div><div class="d127-body" id="d127-bands"></div></div>
         <div class="d127-panel"><div class="d127-h"><span class="d127-t">Recent Activity</span><span class="d127-s">Latest updates</span></div><div class="d127-body d127-act" id="d127-activity"></div></div>
         <div class="d127-panel">
           <div class="d127-h"><span class="d127-t">Lesson Codes</span><span class="d127-s">Quick legend</span></div>
@@ -809,10 +809,11 @@ function ap127PlanDeltaDays(s,planMap){
   if(!deltas.length)return null;
   return deltas.reduce((a,v)=>a+v,0)/deltas.length;
 }
-function ap127BehindSort(arr,asOf){return [...arr].sort((a,b)=>(a.done||0)-(b.done||0)||ap127IdleDays(b,asOf)-ap127IdleDays(a,asOf)||ap127Hours(a)-ap127Hours(b));}
+function ap127PaceSort(arr,asOf){return [...arr].sort((a,b)=>(b.done||0)-(a.done||0)||ap127IdleDays(a,asOf)-ap127IdleDays(b,asOf));}
+function ap127BehindSort(arr,asOf){return [...arr].sort((a,b)=>(a.done||0)-(b.done||0)||ap127IdleDays(b,asOf)-ap127IdleDays(a,asOf));}
 function ap127SortRows(arr,asOf=""){
   const mode=document.getElementById("d127-sort")?.value||"behind";
-  if(mode==="ahead")return [...arr].sort((a,b)=>(b.done||0)-(a.done||0)||ap127Hours(b)-ap127Hours(a));
+  if(mode==="ahead")return ap127PaceSort(arr,asOf);
   if(mode==="hours")return [...arr].sort((a,b)=>ap127Hours(b)-ap127Hours(a)||(b.done||0)-(a.done||0));
   if(mode==="name")return [...arr].sort((a,b)=>a.name.localeCompare(b.name));
   return ap127BehindSort(arr,asOf);
@@ -828,7 +829,7 @@ function renderAP127Detail(){
   const totalHours=ap127CurriculumHours()*total;
   const avgDone=total?doneAll/total:0;
   const maxDate=all.flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"";
-  const sortedLead=[...all].sort((a,b)=>(b.done||0)-(a.done||0)||ap127Hours(b)-ap127Hours(a));
+  const sortedLead=ap127PaceSort(all,maxDate);
   const sortedLag=ap127BehindSort(all,maxDate);
   const aheadNames=sortedLead.slice(0,3).map(s=>s.nick||s.name.split(" ")[0]).join(", ");
   const lagNames=sortedLag.slice(0,3).map(s=>s.nick||s.name.split(" ")[0]).join(", ");
@@ -858,17 +859,28 @@ function renderAP127Detail(){
   }).join("");
   document.getElementById("d127-asof").textContent=maxDate?`As of ${ap127FmtDate(maxDate)}`:"As of -";
 
-  const step=Math.max(1,Math.ceil(curriculum/3));
-  const ranges=[{lo:0,hi:Math.min(step,curriculum),c:"#ffa0a0"},{lo:Math.min(step+1,curriculum),hi:Math.min(step*2,curriculum),c:"#ffd67a"},{lo:Math.min(step*2+1,curriculum),hi:curriculum,c:"#7be9b8"}].filter(r=>r.lo<=r.hi);
-  const bands=ranges.map(r=>({l:`${r.lo}-${r.hi}`,n:all.filter(s=>(s.done||0)>=r.lo&&(s.done||0)<=r.hi).length,c:r.c}));
-  const maxBand=Math.max(...bands.map(b=>b.n),1);
-  document.getElementById("d127-bands").innerHTML=bands.map(b=>`<div class="d127-band"><div class="d127-bl">${b.l}</div><div class="d127-bt"><div class="d127-bf" style="width:${(b.n/maxBand*100)}%;background:${b.c}">${b.n}</div></div><div class="d127-bn">${b.n}</div></div>`).join("");
+  const paced=ap127PaceSort(all,maxDate);
+  const leaderDone=paced[0]?.done||0,lagDone=paced.at(-1)?.done||0;
+  const spread=Math.max(leaderDone-lagDone,1),step=Math.max(Math.ceil(spread/3),1);
+  const aheadLo=leaderDone-step+1,midLo=leaderDone-step*2+1;
+  const bandDefs=[
+    {label:"AHEAD", lo:aheadLo,   hi:leaderDone, c:"#7be9b8"},
+    {label:"MID",   lo:midLo,     hi:aheadLo-1,  c:"#ffd67a"},
+    {label:"BEHIND",lo:lagDone,   hi:midLo-1,    c:"#ffa0a0"},
+  ];
+  bandDefs.forEach(b=>{b.students=paced.filter(s=>(s.done||0)>=b.lo&&(s.done||0)<=b.hi);});
+  const maxN=Math.max(...bandDefs.map(b=>b.students.length),1);
+  document.getElementById("d127-bands").innerHTML=bandDefs.map(b=>{
+    const rangeStr=b.lo>=b.hi?`${b.lo}`:`${b.lo}–${b.hi}`;
+    const names=b.students.map(s=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8px;padding:1px 5px;border-radius:2px;background:${b.c}22;color:${b.c}">${s.nick||s.name.split(" ")[0]}</span>`).join("");
+    return `<div style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:74px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.5px;color:${b.c}">${b.label}<br><span style="color:var(--tx3);font-size:8px">${rangeStr}</span></div><div style="flex:1;height:16px;background:var(--s3);border-radius:99px;overflow:hidden"><div style="height:100%;width:${(b.students.length/maxN*100)}%;background:${b.c};display:flex;align-items:center;padding-left:7px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#000">${b.students.length}</div></div></div><div style="display:flex;flex-wrap:wrap;gap:3px;padding-left:81px">${names||"—"}</div></div>`;
+  }).join("");
 
   const recent=[...all].map(s=>({s,last:(s.flown||[]).at(-1)||{}})).filter(x=>x.last.date).sort((a,b)=>(b.last.date||"").localeCompare(a.last.date||"")||(b.s.done||0)-(a.s.done||0)).slice(0,8);
   document.getElementById("d127-activity").innerHTML=recent.map(x=>`<div class="d127-ai"><div class="d127-an">${x.s.nick||x.s.name} · ${x.last.lesson||"-"}</div><div class="d127-ad">${ap127FmtDate(x.last.date)} · ${ap127Hours(x.s).toFixed(2)} hrs · ${x.s.done||0}/${curriculum}</div></div>`).join("")||`<div class="d127-ad">No activity yet.</div>`;
-  buildAP127Timeline(all,curriculum);
-  buildAP127RaceChart(all,curriculum);
-  buildAP127OverallChart(all,curriculum);
+  buildAP127Timeline(all,curriculum,maxDate);
+  buildAP127RaceChart(all,curriculum,maxDate);
+  buildAP127OverallChart(all,curriculum,maxDate);
 }
 function openAP127Drawer(idx){
   const s=AP127_VIEW_ROWS[idx];if(!s)return;
@@ -884,8 +896,8 @@ function openAP127Drawer(idx){
 function closeAP127Drawer(){document.getElementById("d127-draw-ov").classList.remove("show");}
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAP127Drawer();});
 
-function buildAP127Timeline(all,curriculum){
-  const sorted=[...all].sort((a,b)=>(b.done||0)-(a.done||0)||ap127Hours(b)-ap127Hours(a));
+function buildAP127Timeline(all,curriculum,maxDate){
+  const sorted=ap127PaceSort(all,maxDate);
   const wrap=document.getElementById("d127-timeline-wrap");
   if(wrap)wrap.style.height=Math.max(420,sorted.length*22)+"px";
   const dateSet=new Set();
@@ -950,8 +962,8 @@ function buildAP127Timeline(all,curriculum){
   document.getElementById("d127-tl-meta").textContent=lead&&lag?`Leader ${lead.nick||lead.name.split(" ")[0]} (${lead.done||0}/${curriculum}) · Lag ${lag.nick||lag.name.split(" ")[0]} (${lag.done||0}/${curriculum})`:"-";
 }
 
-function buildAP127RaceChart(all,curriculum){
-  const racers=[...all].sort((a,b)=>(b.done||0)-(a.done||0)||ap127Hours(b)-ap127Hours(a));
+function buildAP127RaceChart(all,curriculum,maxDate){
+  const racers=ap127PaceSort(all,maxDate);
   const today=new Date().toISOString().slice(0,10);
   const plannedDates=(G.cur127||[]).map(c=>c.planned_date).filter(d=>d&&d<=today).sort();
   const dateSet=new Set(plannedDates);
@@ -977,8 +989,8 @@ function buildAP127RaceChart(all,curriculum){
   document.getElementById("d127-race-meta").textContent=`${all.length} students · actual to ${ap127FmtDate(today)} · planned baseline`;
 }
 
-function buildAP127OverallChart(all,curriculum){
-  const sorted=[...all].sort((a,b)=>(b.done||0)-(a.done||0)||ap127Hours(b)-ap127Hours(a));
+function buildAP127OverallChart(all,curriculum,maxDate){
+  const sorted=ap127PaceSort(all,maxDate);
   const maxDone=Math.max(...sorted.map(s=>s.done||0),1);
   CHARTS.ap127overall=mkC("d127-overall",{
     type:"bar",
