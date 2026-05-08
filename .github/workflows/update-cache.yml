@@ -2,15 +2,24 @@ name: Update cache.json
 
 on:
   schedule:
-    - cron: '0 * * * *'   # 01:00 UTC daily (08:00 Bangkok time)
+    - cron: '0 * * * *'   # every hour
   workflow_dispatch:        # allow manual trigger from GitHub UI
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,3 +41,15 @@ jobs:
             git commit -m "chore: update cache.json [$(date -u +%Y-%m-%d)]"
             git push
           fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
