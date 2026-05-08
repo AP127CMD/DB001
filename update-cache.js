@@ -139,6 +139,7 @@ async function fetchBatch(batch) {
   const G = runScheduler(results, curricula);
   G.ap127?.forEach((s, i) => { s.nick = AP127_NICKS[i] || ""; });
 
+  G._updated = new Date().toISOString();
   const fs = await import("fs");
   fs.writeFileSync("cache.json", JSON.stringify(G, null, null));
   console.log("cache.json updated (" + Buffer.byteLength(JSON.stringify(G)) + " bytes)");
