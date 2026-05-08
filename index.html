@@ -523,7 +523,7 @@ function doGet(e) {
 }`;
 
 const DEFAULT_RELAY_URL="https://script.google.com/macros/s/AKfycbxR-M8RIibP4bLLBSnKYPngcsTjs3TZs7HelnSoEOguKhKlWJGnswx3evaXQxwh8zZ8bQ/exec";
-const ADMIN_PASSWORD="00009999";
+const ADMIN_PASSWORD_HASH="__ADMIN_HASH__";
 let ADMIN_UNLOCKED=false;
 let CFG={cap:25,n129:13,ap129start:"2026-06-01",horizon:800,recents:3,upcomings:8,cardH:190,chartH:190,showRest:true,showNextTag:true,relayUrl:DEFAULT_RELAY_URL,layout:{main:"2col",batch:"3b"}};
 let G=null,AB="ALL",calY=2026,calM=4;
@@ -1175,11 +1175,15 @@ function resetPerformanceFilters(){
   renderPerformance();
 }
 
-function requestAdminUnlock(){
+async function sha256(str){
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function requestAdminUnlock(){
   if(ADMIN_UNLOCKED)return true;
   const v=prompt("Enter admin password");
   if(v===null)return false;
-  if(v===ADMIN_PASSWORD){ADMIN_UNLOCKED=true;toast("Admin unlocked","ok");return true;}
+  if(await sha256(v)===ADMIN_PASSWORD_HASH){ADMIN_UNLOCKED=true;toast("Admin unlocked","ok");return true;}
   toast("Incorrect admin password","er");
   return false;
 }
@@ -1207,8 +1211,8 @@ function calNext(){calM++;if(calM>11){calM=0;calY++;}renderCal();}
 
 // ── NAV ──
 function selBatch(b){AB=b;document.querySelectorAll(".bt").forEach(t=>t.classList.remove("active"));document.querySelector(`.bt[data-b="${b}"]`).classList.add("active");const pg=document.querySelector(".page.active")?.id?.replace("page-","");if(pg==="plans")renderPlans();if(pg==="calendar")renderCal();}
-function showPage(name,el){
-  if(name==="admin"&&!requestAdminUnlock())return;
+async function showPage(name,el){
+  if(name==="admin"&&!await requestAdminUnlock())return;
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.querySelectorAll(".nt").forEach(t=>t.classList.remove("active"));
   document.getElementById("page-"+name).classList.add("active");
