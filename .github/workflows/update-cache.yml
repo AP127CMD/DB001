@@ -2,7 +2,7 @@ name: Update cache.json
 
 on:
   schedule:
-    - cron: '0 * * * *'   # every hour
+    - cron: '*/5 * * * *'  # every 5 minutes (minimum GitHub allows)
   workflow_dispatch:        # allow manual trigger from GitHub UI
 
 permissions:
