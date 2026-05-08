@@ -1232,7 +1232,7 @@ function renderAll(){renderStats();buildLoad();buildProg();buildBC("c-124","inf-
 (async function(){
   loadLocal();
   let SEED={};
-  try{const r=await fetch('cache.json');if(r.ok)SEED=await r.json();}catch(e){dbg('cache.json not available','wa');}
+  try{const r=await fetch('cache.json',{cache:'no-cache'});if(r.ok)SEED=await r.json();}catch(e){dbg('cache.json not available','wa');}
   SEED.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
   G=SEED;
   const pfFrom=document.getElementById("pf-from"),pfTo=document.getElementById("pf-to"),pfRecent=document.getElementById("pf-recent-n");
