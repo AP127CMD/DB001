@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Fetches live data from the relay and writes cache.json
 
-const RELAY = "https://script.google.com/macros/s/AKfycbxR-M8RIibP4bLLBSnKYPngcsTjs3TZs7HelnSoEOguKhKlWJGnswx3evaXQxwh8zZ8bQ/exec";
+const RELAY = process.env.RELAY_URL;
+if (!RELAY) { console.error("RELAY_URL environment variable is not set"); process.exit(1); }
 const BATCHES = ["AP124", "AP126", "AP127"];
 
 const AP127_NICKS = ["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN","K-SEE","KRIT","M-PHAN","N-PON","N-KALP","N-PHAT","P-THAN","P-KORN","P-KUL","P-DET","S-SIT","S-KORN","S-WITCH","S-WAN","T-KORN","T-WAJ","V-PHON","W-PHOL","W-POL","W-PONG"];

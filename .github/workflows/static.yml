@@ -31,8 +31,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Inject admin password hash
-        run: sed -i "s/__ADMIN_HASH__/${{ secrets.ADMIN_PASSWORD_HASH }}/g" index.html
+      - name: Inject secrets into index.html
+        run: |
+          sed -i "s|__ADMIN_HASH__|${{ secrets.ADMIN_PASSWORD_HASH }}|g" index.html
+          sed -i "s|__RELAY_URL__|${{ secrets.RELAY_URL }}|g" index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

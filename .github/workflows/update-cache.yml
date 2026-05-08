@@ -29,6 +29,8 @@ jobs:
 
       - name: Fetch data and rebuild cache.json
         run: node update-cache.js
+        env:
+          RELAY_URL: ${{ secrets.RELAY_URL }}
 
       - name: Commit and push if changed
         run: |
@@ -42,8 +44,10 @@ jobs:
             git push
           fi
 
-      - name: Inject admin password hash
-        run: sed -i "s/__ADMIN_HASH__/${{ secrets.ADMIN_PASSWORD_HASH }}/g" index.html
+      - name: Inject secrets into index.html
+        run: |
+          sed -i "s|__ADMIN_HASH__|${{ secrets.ADMIN_PASSWORD_HASH }}|g" index.html
+          sed -i "s|__RELAY_URL__|${{ secrets.RELAY_URL }}|g" index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
