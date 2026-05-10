@@ -73,8 +73,11 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .fr input{width:170px;}
 #pc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);}
 .sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px;}
-.scard{background:var(--s1);border:1px solid var(--bd);border-radius:7px;overflow:hidden;transition:border-color .15s;}
+.scard{background:var(--s1);border:1px solid var(--bd);border-left:4px solid transparent;border-radius:7px;overflow:hidden;transition:border-color .15s;}
 .scard:hover{border-color:var(--tx3);}
+.scard.status-ok{border-left-color:#4ade80;}
+.scard.status-mid{border-left-color:#fbbf24;}
+.scard.status-bad{border-left-color:#f87171;}
 .sh{padding:9px 11px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--bd2);}
 .sname{font-weight:700;font-size:12px;margin-bottom:1px;}.smeta{font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;}
 .spct{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;text-align:right;line-height:1;}
@@ -143,6 +146,8 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .apps-script-code{background:var(--s2);border:1px solid var(--bd2);border-radius:5px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#98c379;white-space:pre;overflow-x:auto;line-height:1.6;margin:10px 0;}
 .copy-btn{font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 10px;border-radius:4px;border:1px solid var(--bd);color:var(--tx2);background:var(--s3);cursor:pointer;}
 .copy-btn:hover{border-color:var(--adm);color:var(--adm);}
+#nav-toggle{display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:10px;border:1px solid var(--bd);color:var(--tx2);background:transparent;}
+#nav-toggle:hover{border-color:var(--tx3);color:var(--tx);}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--s2);}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px;}
 .toast{position:fixed;bottom:18px;right:18px;z-index:999;background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;max-width:320px;transform:translateY(60px);opacity:0;transition:all .3s;pointer-events:none;}
 .toast.show{transform:translateY(0);opacity:1;}
@@ -221,7 +226,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .pf-filter .pt{margin-bottom:7px;color:var(--adm);}
 .pf-filter .fr{margin-bottom:0;}
 .pf-filter .fr input,.pf-filter .fr select{background:var(--s2);}
-@media(max-width:900px){nav{align-items:flex-start;padding-bottom:6px}.navgrp{order:3;width:100%;margin-top:4px}.nright{margin-left:0}.ss{grid-template-columns:repeat(2,1fr);}.cr.c2,.cr.c3{grid-template-columns:1fr;}.sg{grid-template-columns:1fr;}.lg-grid{grid-template-columns:repeat(2,1fr);}.d127-kpis{grid-template-columns:repeat(2,1fr);}.d127-grid,.d127-dg{grid-template-columns:1fr;}.d127-table{min-width:690px}.d127-table th,.d127-table td{padding:6px 4px;font-size:9.5px}.d127-pbg{width:52px}.d127-table th:nth-child(2),.d127-table td:nth-child(2),.d127-table th:nth-child(4),.d127-table td:nth-child(4){display:none;}}
+@media(max-width:900px){nav{align-items:flex-start;padding-bottom:6px}.navgrp{order:3;width:100%;margin-top:4px}.nright{margin-left:0}.ss{grid-template-columns:repeat(2,1fr);}.cr.c2,.cr.c3{grid-template-columns:1fr;}.sg{grid-template-columns:1fr;}.lg-grid{grid-template-columns:repeat(2,1fr);}.d127-kpis{grid-template-columns:repeat(2,1fr);}.d127-grid,.d127-dg{grid-template-columns:1fr;}.d127-table{min-width:690px}.d127-table th,.d127-table td{padding:6px 4px;font-size:9.5px}.d127-pbg{width:52px}.d127-table th:nth-child(2),.d127-table td:nth-child(2),.d127-table th:nth-child(4),.d127-table td:nth-child(4){display:none;}#nav-toggle{display:flex;}.navgrp .bts{display:none;}.navgrp .bts.open{display:flex;flex-wrap:wrap;gap:4px;padding-top:4px;}.bt{padding:8px 14px;font-size:12px;}}
 </style>
 </head>
 <body>
@@ -229,11 +234,13 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
   <div class="nb">AP127 Dashboard</div>
   <div class="nt active" onclick="showPage('ap127detail',this)">AP127 Detail</div>
   <div class="nt" onclick="showPage('performance',this)">School's Performance</div>
+  <div class="nt" onclick="showPage('capacity',this)">Capacity</div>
   <div class="navgrp">
     <div class="nglbl">Overall Situation and Image</div>
     <div class="nt" onclick="showPage('overview',this)">Overview</div>
     <div class="nt" onclick="showPage('plans',this)">Flight Plans</div>
     <div class="nt" onclick="showPage('calendar',this)">Calendar</div>
+    <button id="nav-toggle" onclick="toggleNav()">☰ Batches</button>
     <div class="bts">
       <div class="bt active" data-b="ALL" onclick="selBatch('ALL')">ALL</div>
       <div class="bt" data-b="AP124" onclick="selBatch('AP124')">AP124</div>
@@ -331,6 +338,22 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
   </div>
   <div class="cr c1">
     <div class="cb"><div class="ch">Monthly Actual Hours by Batch</div><div class="cs">Historical stacked hours contribution</div><div style="position:relative;height:230px"><canvas id="c-perf-monthly"></canvas></div></div>
+  </div>
+</div>
+
+<div id="page-capacity" class="page">
+  <div class="d127-wrap">
+    <div class="d127-kpis" style="grid-template-columns:repeat(4,1fr)">
+      <div class="d127-kpi"><div class="d127-kl">Peak Month</div><div class="d127-kv" id="cap-peak-month">-</div><div class="d127-ks" id="cap-peak-sub">avg flights/day</div></div>
+      <div class="d127-kpi"><div class="d127-kl">Current Month</div><div class="d127-kv" id="cap-curr-month">-</div><div class="d127-ks">avg flights/day</div></div>
+      <div class="d127-kpi"><div class="d127-kl">Months at Cap</div><div class="d127-kv" id="cap-at-cap">-</div><div class="d127-ks">≥ daily cap</div></div>
+      <div class="d127-kpi"><div class="d127-kl">Idle Months</div><div class="d127-kv" id="cap-idle">-</div><div class="d127-ks">&lt; 15 avg flights/day</div></div>
+    </div>
+    <div class="cb">
+      <div class="ch">Monthly Flight Capacity — avg flights/workday per batch</div>
+      <div class="cs">Stacked by batch · dashed line = daily cap · red zone = at/over capacity</div>
+      <div style="position:relative;height:300px"><canvas id="c-capacity"></canvas></div>
+    </div>
   </div>
 </div>
 
@@ -601,8 +624,8 @@ function parseCSV(text,batch){
 }
 
 // ── SCHEDULER ──
-function isWD(ds){const d=new Date(ds+"T00:00:00"),dw=d.getDay();return dw!==0&&dw!==6&&!HOL.has(ds);}
-function getWDs(s,n){const a=[];let d=new Date(s+"T00:00:00");while(a.length<n){const ds=d.toISOString().slice(0,10);if(isWD(ds))a.push(ds);d.setDate(d.getDate()+1);}return a;}
+function isWD(ds){const d=new Date(ds+"T12:00:00Z"),dw=d.getUTCDay();return dw!==0&&dw!==6&&!HOL.has(ds);}
+function getWDs(s,n){const a=[];let d=new Date(s+"T12:00:00Z");while(a.length<n){const ds=d.toISOString().slice(0,10);if(isWD(ds))a.push(ds);d.setUTCDate(d.getUTCDate()+1);}return a;}
 
 function runScheduler(batchData,curricula){
   const{cap,n129,ap129start,horizon}=CFG;
@@ -756,6 +779,43 @@ function buildBC(cid,infId,k,col){
   CHARTS[cid]=mkC(cid,{type:"bar",data:{labels:st.map(s=>s.nick||s.name.split(" ")[0]),datasets:[{label:"Done",data:st.map(s=>s.done),backgroundColor:col+"99",stack:"s"},{label:"Remaining",data:st.map(s=>s.remaining),backgroundColor:"rgba(48,54,61,.5)",stack:"s"}]},options:{...copts({stacked:true,ticks:{font:{family:"JetBrains Mono",size:7},color:"#6e7681",maxRotation:90},grid:{color:"#21262d"}},{stacked:true,grid:{color:"#21262d"}}),plugins:{legend:{display:false}}}});
 }
 
+// ── CAPACITY ──
+function buildCapacity(){
+  if(!G)return;
+  const monthly=G.monthly||{};
+  const M=Object.keys(monthly).sort();
+  if(!M.length)return;
+  const cap=CFG.cap;
+  const lbl=M.map(m=>{const[y,mo]=m.split("-");return["","J","F","M","A","M","J","J","A","S","O","N","D"][+mo]+"'"+y.slice(2);});
+  const v=k=>M.map(m=>(monthly[m]||{})[k]||0);
+  const totals=M.map(m=>(monthly[m]||{}).t||0);
+  const todayM=new Date().toISOString().slice(0,7);
+  const currV=monthly[todayM];
+  const peakM=M.reduce((best,m)=>(monthly[m]?.t||0)>(monthly[best]?.t||0)?m:best,M[0]);
+  const atCap=M.filter(m=>(monthly[m]?.t||0)>=cap-0.5).length;
+  const idle=M.filter(m=>{const t=monthly[m]?.t||0;return t>0&&t<15;}).length;
+  const setEl=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  setEl("cap-peak-month",(monthly[peakM]?.t||0).toFixed(1));
+  setEl("cap-peak-sub",peakM+" · avg/workday");
+  setEl("cap-curr-month",currV?(currV.t||0).toFixed(1):"—");
+  setEl("cap-at-cap",atCap);
+  setEl("cap-idle",idle);
+  CHARTS.capacity=mkC("c-capacity",{type:"bar",data:{labels:lbl,datasets:[
+    {label:"AP124",data:v("124"),backgroundColor:"rgba(192,132,252,.75)",stack:"s"},
+    {label:"AP126",data:v("126"),backgroundColor:"rgba(56,189,248,.75)",stack:"s"},
+    {label:"AP127",data:v("127"),backgroundColor:"rgba(251,146,60,.75)",stack:"s"},
+    {label:"AP129",data:v("129"),backgroundColor:"rgba(74,222,128,.75)",stack:"s"},
+    {label:"Cap",data:Array(lbl.length).fill(cap),type:"line",borderColor:"#f59e0b",borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false}
+  ]},options:{...copts(
+    {stacked:true,grid:{color:"#21262d"}},
+    {stacked:true,max:Math.max(cap+5,Math.max(...totals)+3),grid:{color:"#21262d"}}
+  ),plugins:{...copts().plugins,tooltip:{callbacks:{
+    title:([ctx])=>M[ctx.dataIndex]||ctx.label,
+    afterBody:([ctx])=>`Total: ${totals[ctx.dataIndex].toFixed(1)} / Cap: ${cap}`
+  }}}}});
+}
+function renderCapacity(){if(!G)return;buildCapacity();}
+
 // ── TIMELINE ──
 function renderTimeline(){
   const S=new Date("2026-04-01T00:00:00"),E=new Date("2027-12-01T00:00:00"),span=E-S;
@@ -770,7 +830,7 @@ function renderTimeline(){
 }
 
 // ── CARDS ──
-function makeCard(s){
+function makeCard(s,rankClass=""){
   const col=BC[s.batch],bg=BB[s.batch];
   const nick=s.nick?`<span style="font-family:'JetBrains Mono',monospace;font-size:8px;padding:1px 3px;border-radius:2px;background:${bg};color:${col};margin-left:3px">${s.nick}</span>`:"";
   const fRows=(s.flown||[]).slice(-CFG.recents).map(f=>`<div class="lr"><div class="ld" style="background:var(--done)"></div><div class="ldate" style="color:var(--done)">${fd(f.date)}</div><div class="lname" style="color:var(--done)">${f.lesson}</div><div class="ldur">${f.actual_ft||hm(f.actual_mins)}</div></div>`).join("");
@@ -780,7 +840,7 @@ function makeCard(s){
   const more=(s.planned_total||0)>CFG.upcomings?`<div class="moret">+${s.planned_total-CFG.upcomings} more</div>`:"";
   const fin=s.finish==="COMPLETE"?"COMPLETED":fd(s.finish);
   const ntag=CFG.showNextTag&&s.next_lesson?`<b style="color:${col}">${s.next_lesson}</b>`:"";
-  return`<div class="scard"><div class="sh"><div><div class="sname">${s.name}${nick}</div><div class="smeta">${s.batch} · ${s.done}/${s.total}</div></div><div><div class="spct" style="color:${col}">${s.pct.toFixed(1)}%</div><div class="spct2">${s.remaining} left</div></div></div><div class="pb"><div class="pf" style="width:${Math.max(s.pct,.3)}%;background:${col}"></div></div><div class="sb2" style="max-height:${CFG.cardH}px">${fRows}${sep}${pRows}${more}</div><div class="sf2"><span style="font-size:10px;color:var(--tx3)">Next:${ntag?` ${ntag}`:""}</span><span class="ftag" style="background:${bg};color:${col};border:1px solid ${col}33">${fin}</span></div></div>`;
+  return`<div class="scard${rankClass?" status-"+rankClass:""}"><div class="sh"><div><div class="sname">${s.name}${nick}</div><div class="smeta">${s.batch} · ${s.done}/${s.total}</div></div><div><div class="spct" style="color:${col}">${s.pct.toFixed(1)}%</div><div class="spct2">${s.remaining} left</div></div></div><div class="pb"><div class="pf" style="width:${Math.max(s.pct,.3)}%;background:${col}"></div></div><div class="sb2" style="max-height:${CFG.cardH}px">${fRows}${sep}${pRows}${more}</div><div class="sf2"><span style="font-size:10px;color:var(--tx3)">Next:${ntag?` ${ntag}`:""}</span><span class="ftag" style="background:${bg};color:${col};border:1px solid ${col}33">${fin}</span></div></div>`;
 }
 function renderPlans(){
   const q=document.getElementById("si").value.toLowerCase();const srt=document.getElementById("ss-sel").value;
@@ -789,7 +849,12 @@ function renderPlans(){
   if(srt==="finish")arr=[...arr].sort((a,b)=>((a.finish||"Z")<(b.finish||"Z")?-1:1));
   else if(srt==="pct")arr=[...arr].sort((a,b)=>b.pct-a.pct);
   else if(srt==="name")arr=[...arr].sort((a,b)=>a.name.localeCompare(b.name));
-  document.getElementById("sg").innerHTML=arr.map(makeCard).join("");
+  const rankMap=new Map();
+  ["AP124","AP126","AP127","AP129"].forEach(b=>{
+    const grp=arr.filter(s=>s.batch===b).sort((a,z)=>z.pct-a.pct);
+    grp.forEach((s,i)=>rankMap.set(s.catc_id,ap127RankClass(i+1,grp.length)));
+  });
+  document.getElementById("sg").innerHTML=arr.map(s=>makeCard(s,rankMap.get(s.catc_id)||"")).join("");
   document.getElementById("pc").textContent=arr.length+" students";
 }
 
@@ -1040,18 +1105,18 @@ function collectHistoricalFlights(){
 }
 const PERF_BASE_START="2025-11-01";
 function perfIsBusinessDay(ds){
-  const d=new Date(ds+"T00:00:00");
-  const dw=d.getDay();
+  const d=new Date(ds+"T12:00:00Z");
+  const dw=d.getUTCDay();
   return dw!==0&&dw!==6&&!HOL.has(ds);
 }
 function perfBusinessDates(start,end){
   const out=[];
-  let d=new Date(start+"T00:00:00");
-  const e=new Date(end+"T00:00:00");
+  let d=new Date(start+"T12:00:00Z");
+  const e=new Date(end+"T12:00:00Z");
   while(d<=e){
     const ds=d.toISOString().slice(0,10);
     if(perfIsBusinessDay(ds))out.push(ds);
-    d.setDate(d.getDate()+1);
+    d.setUTCDate(d.getUTCDate()+1);
   }
   return out;
 }
@@ -1211,7 +1276,8 @@ function calPrev(){calM--;if(calM<0){calM=11;calY--;}renderCal();}
 function calNext(){calM++;if(calM>11){calM=0;calY++;}renderCal();}
 
 // ── NAV ──
-function selBatch(b){AB=b;document.querySelectorAll(".bt").forEach(t=>t.classList.remove("active"));document.querySelector(`.bt[data-b="${b}"]`).classList.add("active");const pg=document.querySelector(".page.active")?.id?.replace("page-","");if(pg==="plans")renderPlans();if(pg==="calendar")renderCal();}
+function toggleNav(){const bts=document.querySelector(".navgrp .bts");if(bts)bts.classList.toggle("open");}
+function selBatch(b){AB=b;document.querySelectorAll(".bt").forEach(t=>t.classList.remove("active"));document.querySelector(`.bt[data-b="${b}"]`).classList.add("active");if(window.innerWidth<=900){const bts=document.querySelector(".navgrp .bts");if(bts)bts.classList.remove("open");}const pg=document.querySelector(".page.active")?.id?.replace("page-","");if(pg==="plans")renderPlans();if(pg==="calendar")renderCal();}
 async function showPage(name,el){
   if(name==="admin"&&!await requestAdminUnlock())return;
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
@@ -1221,12 +1287,13 @@ async function showPage(name,el){
   if(name==="plans")renderPlans();
   if(name==="calendar")renderCal();
   if(name==="performance")renderPerformance();
+  if(name==="capacity")renderCapacity();
   if(name==="ap127detail")renderAP127Detail();
   if(name==="admin"){const el2=document.getElementById("relay-url");if(el2&&CFG.relayUrl)el2.value=CFG.relayUrl;document.getElementById("script-code").textContent=APPS_SCRIPT_CODE;}
 }
 
 // ── RENDER ALL ──
-function renderAll(){renderStats();buildLoad();buildProg();buildBC("c-124","inf-124","ap124",BC.AP124);buildBC("c-126","inf-126","ap126",BC.AP126);buildBC("c-127","inf-127","ap127",BC.AP127);renderTimeline();const pg=document.querySelector(".page.active")?.id?.replace("page-","");if(pg==="plans")renderPlans();if(pg==="calendar")renderCal();if(pg==="performance")renderPerformance();if(pg==="ap127detail")renderAP127Detail();}
+function renderAll(){renderStats();buildLoad();buildProg();buildBC("c-124","inf-124","ap124",BC.AP124);buildBC("c-126","inf-126","ap126",BC.AP126);buildBC("c-127","inf-127","ap127",BC.AP127);renderTimeline();const pg=document.querySelector(".page.active")?.id?.replace("page-","");if(pg==="plans")renderPlans();if(pg==="calendar")renderCal();if(pg==="performance")renderPerformance();if(pg==="capacity")renderCapacity();if(pg==="ap127detail")renderAP127Detail();}
 
 // ── INIT ──
 (async function(){

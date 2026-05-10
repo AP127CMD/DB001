@@ -62,10 +62,10 @@ function parseCSV(text, batch) {
 }
 
 // ── SCHEDULER ──
-function isWD(ds) { const d = new Date(ds+"T00:00:00"), dw = d.getDay(); return dw !== 0 && dw !== 6 && !HOL.has(ds); }
+function isWD(ds) { const d = new Date(ds+"T12:00:00Z"), dw = d.getUTCDay(); return dw !== 0 && dw !== 6 && !HOL.has(ds); }
 function getWDs(s, n) {
-  const a = []; let d = new Date(s+"T00:00:00");
-  while (a.length < n) { const ds = d.toISOString().slice(0,10); if (isWD(ds)) a.push(ds); d.setDate(d.getDate()+1); }
+  const a = []; let d = new Date(s+"T12:00:00Z");
+  while (a.length < n) { const ds = d.toISOString().slice(0,10); if (isWD(ds)) a.push(ds); d.setUTCDate(d.getUTCDate()+1); }
   return a;
 }
 function runScheduler(batchData, curricula) {
