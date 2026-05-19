@@ -322,13 +322,52 @@ Push to main
 
 | Date | Commit | Description |
 |---|---|---|
+| 2026-05-19 | (pending) | **feat:** student ranking table redesign (call sign column, IDLE days, DAY delta with color coding) · hours calculated from curriculum planned time · timeline with connecting lines and gaps · race chart with toggles per student · consistent call sign usage across all views |
 | 2026-05-11 | `ad29c3a` | **feat:** status bands · capacity page · mobile nav hamburger · timezone fix |
 | 2026-05-10 | `7f5ac65` | chore: automated cache updates |
 | (earlier) | | Chrome cache bypass fix; Node v20→v22; admin password hashing; AP127 pace bands |
 
 ---
 
-## 14. Known Issues / Backlog
+## 14. AP127 Detail Page Improvements (2026-05-19)
+
+### Student Ranking Table
+- **Call Sign column:** Moved call sign (e.g., A-RUT) from secondary display below name to dedicated column for clearer identification
+- **IDLE(days) column:** Shows number of days since student's last flight to current date
+- **Hours calculation:** Changed from actual flight time to planned curriculum time per completed lesson (more accurate for planning)
+- **DAY delta column:** 
+  - Replaces "Plan Delta" with focus on last lesson date vs. plan
+  - Calculates: current date minus planned date of last completed lesson
+  - Positive = delay (shown in red), negative = ahead (shown in green)
+  - Example: If last lesson CDGL 02 has plan date 2026-05-09 and today is 2026-05-19, shows +10 days (delay) in red
+- **Last FLT column:** Renamed from "Last Date" for clarity (shows date of last completed flight)
+
+### Flight Timeline vs Progress
+- **Connecting lines:** Lines now connect dots for each student to visualize flight progression over time
+- **Gaps annotation:** Days between flights visible via line segments
+- **Call sign labels:** Y-axis shows call signs (e.g., "1. A-VIT") instead of full names for compactness
+- **Aligned layout:** Student names positioned at vertical midpoint of their row for better visual alignment
+
+### Actual vs Planned (Race Chart)
+- **Toggle controls:**
+  - "✓ All" button: Show all student lines
+  - "✗ None" button: Hide all student lines
+  - Per-student buttons: Click call sign to toggle that student's line on/off
+  - Buttons highlight in blue (visible) or gray (hidden) for clarity
+- **Call sign labels:** Legend and buttons use call signs throughout
+- **Final values:** Line values visible at endpoints for reading final cumulative lesson count
+
+### Overall Progress Bar View
+- **Call sign labels:** Y-axis labels use call signs instead of full names
+
+### Color Consistency
+- Red: Most behind (visually indicates delay)
+- Green: Most ahead (visually indicates progress)
+- Applied consistently across DAY delta column, pace bands, and progress indicators
+
+---
+
+## 15. Known Issues / Backlog
 
 - **AP127_NICKS array is duplicated** in `index.html` and `update-cache.js` — should be sourced from one place (e.g., `cache.json` or a shared `config.json`).
 - **Input validation missing in Admin** — invalid AP129 start date silently fails.
