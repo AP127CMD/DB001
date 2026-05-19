@@ -381,7 +381,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
         <div class="d127-h"><span class="d127-t">Progress Ranking</span><span class="d127-s" id="d127-asof">As of -</span></div>
         <div class="d127-table-wrap">
           <table class="d127-table">
-            <thead><tr><th>Rank</th><th>No.</th><th>Name</th><th>Call Sign</th><th>CATC ID</th><th>Done</th><th>Progress</th><th>Hours</th><th>Idle(days)</th><th>DAY delta</th><th>Last Lesson</th><th>Last FLT</th></tr></thead>
+            <thead><tr><th>Rank</th><th>No.</th><th>Name</th><th>Call Sign</th><th>CATC ID</th><th>Done</th><th>Progress</th><th>Hours</th><th>Hrs Delta</th><th>Idle(days)</th><th>DAY delta</th><th>Last Lesson</th><th>Last FLT</th></tr></thead>
             <tbody id="d127-rows"></tbody>
           </table>
         </div>
@@ -865,6 +865,7 @@ function ap127ShortDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00")
 function ap127FlightMins(f){return f.actual_mins||f.mins||0;}
 function ap127Hours(s){const cur=G?.cur127||[];const lessonsMap={};cur.forEach(c=>{lessonsMap[c.lesson]=c.planned_mins||0;});return ((s.flown||[]).reduce((a,f)=>a+(lessonsMap[f.lesson]||ap127FlightMins(f)),0))/60;}
 function ap127CurriculumHours(){return ((G?.cur127||[]).reduce((a,c)=>a+(c.planned_mins||c.mins||0),0))/60;}
+function ap127PlannedHoursAsOf(today){return ((G?.cur127||[]).filter(c=>c.planned_date&&c.planned_date<=today).reduce((a,c)=>a+(c.planned_mins||0),0))/60;}
 function ap127FmtNum(n,d=1){return Number(n||0).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});}
 function ap127LastFlightDate(s){return (s.flown||[]).map(f=>f.date).filter(Boolean).sort().at(-1)||"";}
 function ap127IdleDays(s,asOf){const last=ap127LastFlightDate(s);return last&&asOf?Math.max(0,ap127DateDiff(asOf,last)||0):9999;}
@@ -927,6 +928,10 @@ function renderAP127Detail(){
   tbody.innerHTML=rows.map((s,idx)=>{
     const rank=idx+1,pct=curriculum?((s.done||0)/curriculum*100):0;
     const hrs=ap127Hours(s);
+    const plannedHrs=ap127PlannedHoursAsOf(today);
+    const hrsDelta=hrs-plannedHrs;
+    const hrsDeltaTxt=(hrsDelta>=0?"+":"")+hrsDelta.toFixed(1)+"h";
+    const hrsDeltaColor=hrsDelta>=0?"#51cf66":"#ff6b6b";
     const idle=ap127IdleDays(s,maxDate);
     const idleTxt=idle===9999?"-":idle.toString();
     const dayDelta=ap127DayDelta(s,planMap,today);
@@ -934,7 +939,7 @@ function renderAP127Detail(){
     const dayDeltaColor=dayDelta===null?"":dayDelta>0?"#ff6b6b":"#51cf66";
     const rankColor=getBandColor(s.done||0);
     const last=(s.flown||[]).at(-1)||{};
-    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td class="d127-mono">${String(idx+1).padStart(2,"0")}</td><td><div class="d127-name">${s.name}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono">${s.catc_id||"-"}</td><td class="d127-mono">${s.done||0}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td></tr>`;
+    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td class="d127-mono">${String(idx+1).padStart(2,"0")}</td><td><div class="d127-name">${s.name}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono">${s.catc_id||"-"}</td><td class="d127-mono">${s.done||0}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td><td class="d127-mono">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td></tr>`;
   }).join("");
   const bandDefs=[
     {label:"AHEAD", lo:aheadLo,   hi:leaderDone, c:"#7be9b8"},
