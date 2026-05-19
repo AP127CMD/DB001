@@ -914,14 +914,16 @@ function renderAP127Detail(){
   let rows=ap127SortRows(all,maxDate);
   if(q)rows=rows.filter(s=>s.name.toLowerCase().includes(q)||(s.nick||"").toLowerCase().includes(q)||(s.catc_id||"").toLowerCase().includes(q));
   AP127_VIEW_ROWS=rows;
-  const tbody=document.getElementById("d127-rows");
-  const today=new Date().toISOString().slice(0,10);
+  const updTxt=G._updated?new Date(G._updated).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
+  document.getElementById("d127-asof").textContent=`Updated ${updTxt}`;
+
   const paced=ap127PaceSort(all,maxDate);
   const leaderDone=paced[0]?.done||0,lagDone=paced.at(-1)?.done||0;
   const spread=Math.max(leaderDone-lagDone,1),step=Math.max(Math.ceil(spread/3),1);
   const aheadLo=leaderDone-step+1,midLo=leaderDone-step*2+1;
-  const bandColors={AHEAD:"#7be9b8",MID:"#ffd67a",BEHIND:"#ffa0a0"};
-  const getBandColor=(done)=>{if(done>=aheadLo)return bandColors.AHEAD;if(done>=midLo)return bandColors.MID;return bandColors.BEHIND;};
+  const getBandColor=(done)=>{if(done>=aheadLo)return"#7be9b8";if(done>=midLo)return"#ffd67a";return"#ffa0a0";};
+  const tbody=document.getElementById("d127-rows");
+  const today=new Date().toISOString().slice(0,10);
   tbody.innerHTML=rows.map((s,idx)=>{
     const rank=idx+1,pct=curriculum?((s.done||0)/curriculum*100):0;
     const hrs=ap127Hours(s);
@@ -934,13 +936,6 @@ function renderAP127Detail(){
     const last=(s.flown||[]).at(-1)||{};
     return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td class="d127-mono">${String(idx+1).padStart(2,"0")}</td><td><div class="d127-name">${s.name}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono">${s.catc_id||"-"}</td><td class="d127-mono">${s.done||0}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td></tr>`;
   }).join("");
-  const updTxt=G._updated?new Date(G._updated).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
-  document.getElementById("d127-asof").textContent=`Updated ${updTxt}`;
-
-  const paced=ap127PaceSort(all,maxDate);
-  const leaderDone=paced[0]?.done||0,lagDone=paced.at(-1)?.done||0;
-  const spread=Math.max(leaderDone-lagDone,1),step=Math.max(Math.ceil(spread/3),1);
-  const aheadLo=leaderDone-step+1,midLo=leaderDone-step*2+1;
   const bandDefs=[
     {label:"AHEAD", lo:aheadLo,   hi:leaderDone, c:"#7be9b8"},
     {label:"MID",   lo:midLo,     hi:aheadLo-1,  c:"#ffd67a"},
