@@ -1039,7 +1039,79 @@ function buildAP127Timeline(all,curriculum,maxDate){
   document.getElementById("d127-tl-meta").textContent=lead&&lag?`Leader ${lead.nick||lead.name.split(" ")[0]} (${lead.done||0}/${curriculum}) · Lag ${lag.nick||lag.name.split(" ")[0]} (${lag.done||0}/${curriculum})`:"-";
 }
 
-const AP127_RACE_VISIBILITY={};function buildAP127RaceChart(all,curriculum,maxDate){const racers=ap127PaceSort(all,maxDate);const today=new Date().toISOString().slice(0,10);const plannedDates=(G.cur127||[]).map(c=>c.planned_date).filter(d=>d&&d<=today).sort();const dateSet=new Set(plannedDates);dateSet.add(today);racers.forEach(s=>(s.flown||[]).forEach(f=>{if(f.date&&f.date<=today)dateSet.add(f.date);}));const labels=[...dateSet].sort();const cumSeries=(dates)=>{const cnt={};dates.forEach(d=>{cnt[d]=(cnt[d]||0)+1;});let run=0;return labels.map(d=>{run+=(cnt[d]||0);return run;});};const datasets=[{label:"Planned Target",data:cumSeries(plannedDates),borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2}];const allDatasets=[{label:"Planned Target",data:cumSeries(plannedDates),borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2}];racers.forEach((s,i)=>{const hue=(i*360/Math.max(racers.length,1)).toFixed(0);const ad=(s.flown||[]).map(f=>f.date).filter(d=>d&&d<=today).sort();const nick=s.nick||s.name;allDatasets.push({label:nick,data:cumSeries(ad),borderColor:`hsla(${hue},85%,62%,0.72)`,pointRadius:2.5,pointHoverRadius:3.5,pointBackgroundColor:`hsla(${hue},85%,62%,0.9)`,tension:.18,borderWidth:1.15,hidden:false});if(AP127_RACE_VISIBILITY[nick]!==false){datasets.push({label:nick,data:cumSeries(ad),borderColor:`hsla(${hue},85%,62%,0.72)`,pointRadius:2.5,pointHoverRadius:3.5,pointBackgroundColor:`hsla(${hue},85%,62%,0.9)`,tension:.18,borderWidth:1.15});}});CHARTS.ap127race=mkC("d127-race",{type:"line",data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:(ctx)=>ap127FmtDate(ctx[0]?.label||"")}}},scales:{x:{ticks:{font:{family:"JetBrains Mono",size:8},color:"#6e7681",maxTicksLimit:18},grid:{color:"#21262d"}},y:{beginAtZero:true,ticks:{font:{family:"JetBrains Mono",size:9},color:"#8b949e"},grid:{color:"#21262d"}}}}});const togglesDiv=document.getElementById("d127-race-toggles");togglesDiv.innerHTML=`<button onclick="ap127ToggleRaceAll(true)" style="padding:4px 8px;background:#4ade80;color:#000;border:0;border-radius:3px;cursor:pointer;font-weight:600;font-size:10px">✓ All</button><button onclick="ap127ToggleRaceAll(false)" style="padding:4px 8px;background:#ef4444;color:#fff;border:0;border-radius:3px;cursor:pointer;font-weight:600;font-size:10px">✗ None</button>`;racers.forEach(s=>{const nick=s.nick||s.name;const isVisible=AP127_RACE_VISIBILITY[nick]!==false;const btn=document.createElement("button");btn.textContent=nick;btn.style.padding="4px 8px";btn.style.background=isVisible?"#38bdf8":"#6e7681";btn.style.color="#000";btn.style.border="0";btn.style.borderRadius="3px";btn.style.cursor="pointer";btn.style.fontSize="10px";btn.style.fontFamily="JetBrains Mono";btn.onclick=()=>ap127ToggleRaceStudent(nick);togglesDiv.appendChild(btn);});document.getElementById("d127-race-meta").textContent=`${all.length} students · actual to ${ap127FmtDate(today)} · planned baseline`;}function ap127ToggleRaceStudent(nick){AP127_RACE_VISIBILITY[nick]=!AP127_RACE_VISIBILITY[nick];buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");}function ap127ToggleRaceAll(show){G.ap127?.forEach(s=>{const nick=s.nick||s.name;AP127_RACE_VISIBILITY[nick]=show;});buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");}
+let AP127_RACE_SOLO=null;
+function buildAP127RaceChart(all,curriculum,maxDate){
+  const racers=ap127PaceSort(all,maxDate);
+  const today=new Date().toISOString().slice(0,10);
+  const plannedDates=(G.cur127||[]).map(c=>c.planned_date).filter(d=>d&&d<=today).sort();
+  const dateSet=new Set(plannedDates);
+  dateSet.add(today);
+  racers.forEach(s=>(s.flown||[]).forEach(f=>{if(f.date&&f.date<=today)dateSet.add(f.date);}));
+  const labels=[...dateSet].sort();
+  const labelsSet=new Set(labels);
+  const cumSeries=(flightDates)=>{
+    const flightSet=new Set(flightDates);
+    const cnt={};flightDates.forEach(d=>{cnt[d]=(cnt[d]||0)+1;});
+    let run=0;
+    return labels.map(d=>{
+      run+=(cnt[d]||0);
+      return {y:run,r:flightSet.has(d)?3:0};
+    });
+  };
+  const datasets=[{
+    label:"Planned Target",
+    data:(()=>{const cnt={};plannedDates.forEach(d=>{cnt[d]=(cnt[d]||0)+1;});let run=0;return labels.map(d=>{run+=(cnt[d]||0);return run;});}()),
+    borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2,
+    parsing:{yAxisKey:"y"}
+  }];
+  racers.forEach((s,i)=>{
+    const hue=(i*360/Math.max(racers.length,1)).toFixed(0);
+    const col=`hsla(${hue},85%,62%,0.8)`;
+    const nick=s.nick||s.name;
+    const ad=(s.flown||[]).map(f=>f.date).filter(d=>d&&d<=today).sort();
+    const visible=AP127_RACE_SOLO===null||AP127_RACE_SOLO===nick;
+    const pts=cumSeries(ad);
+    datasets.push({
+      label:nick,
+      data:pts.map(p=>p.y),
+      borderColor:col,
+      pointRadius:pts.map(p=>p.r),
+      pointHoverRadius:pts.map(p=>p.r?5:0),
+      pointBackgroundColor:col,
+      pointBorderWidth:0,
+      tension:.18,
+      borderWidth:visible?1.5:0,
+      hidden:!visible
+    });
+  });
+  CHARTS.ap127race=mkC("d127-race",{
+    type:"line",data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:(ctx)=>ap127FmtDate(ctx[0]?.label||""),label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y}`}}},
+      scales:{
+        x:{ticks:{font:{family:"JetBrains Mono",size:8},color:"#6e7681",maxTicksLimit:18},grid:{color:"#21262d"}},
+        y:{beginAtZero:true,ticks:{font:{family:"JetBrains Mono",size:9},color:"#8b949e"},grid:{color:"#21262d"}}
+      }
+    }
+  });
+  const togglesDiv=document.getElementById("d127-race-toggles");
+  togglesDiv.innerHTML="";
+  const allBtn=document.createElement("button");
+  allBtn.textContent="ALL";
+  allBtn.style.cssText=`padding:4px 10px;background:${AP127_RACE_SOLO===null?"#4ade80":"#30363d"};color:${AP127_RACE_SOLO===null?"#000":"#8b949e"};border:0;border-radius:3px;cursor:pointer;font-weight:700;font-size:10px;font-family:'JetBrains Mono',monospace`;
+  allBtn.onclick=()=>{AP127_RACE_SOLO=null;buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");};
+  togglesDiv.appendChild(allBtn);
+  racers.forEach(s=>{
+    const nick=s.nick||s.name;
+    const active=AP127_RACE_SOLO===nick;
+    const btn=document.createElement("button");
+    btn.textContent=nick;
+    btn.style.cssText=`padding:4px 8px;background:${active?"#38bdf8":"#30363d"};color:${active?"#000":"#8b949e"};border:0;border-radius:3px;cursor:pointer;font-size:10px;font-family:'JetBrains Mono',monospace`;
+    btn.onclick=()=>{AP127_RACE_SOLO=active?null:nick;buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");};
+    togglesDiv.appendChild(btn);
+  });
+  document.getElementById("d127-race-meta").textContent=`${all.length} students · actual to ${ap127FmtDate(today)} · planned baseline`;
+}
 
 function buildAP127OverallChart(all,curriculum,maxDate){
   const sorted=ap127PaceSort(all,maxDate);
