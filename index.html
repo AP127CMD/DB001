@@ -378,7 +378,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
     </div>
     <div class="d127-grid">
       <div class="d127-panel">
-        <div class="d127-h"><span class="d127-t">Student Ranking</span><span class="d127-s" id="d127-asof">As of -</span></div>
+        <div class="d127-h"><span class="d127-t">Progress Ranking</span><span class="d127-s" id="d127-asof">As of -</span></div>
         <div class="d127-table-wrap">
           <table class="d127-table">
             <thead><tr><th>Rank</th><th>No.</th><th>Name</th><th>Call Sign</th><th>CATC ID</th><th>Done</th><th>Progress</th><th>Hours</th><th>Idle(days)</th><th>DAY delta</th><th>Last Lesson</th><th>Last FLT</th></tr></thead>
@@ -388,7 +388,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
       </div>
       <div class="d127-side">
         <div class="d127-panel"><div class="d127-h"><span class="d127-t">Pace Bands</span><span class="d127-s">leader → lagger spread</span></div><div class="d127-body" id="d127-bands"></div></div>
-        <div class="d127-panel"><div class="d127-h"><span class="d127-t">Recent Activity</span><span class="d127-s">Latest updates</span></div><div class="d127-body d127-act" id="d127-activity"></div></div>
+        <div class="d127-panel"><div class="d127-h"><span class="d127-t">Recent Flight</span><span class="d127-s">Latest updates</span></div><div class="d127-body d127-act" id="d127-activity"></div></div>
         <div class="d127-panel">
           <div class="d127-h"><span class="d127-t">Lesson Codes</span><span class="d127-s">Quick legend</span></div>
           <div class="d127-body d127-legend">
@@ -406,7 +406,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
       <div class="d127-h"><span class="d127-t">Flight Timeline vs Progress</span><span class="d127-s" id="d127-tl-meta">-</span></div>
       <div class="d127-body">
         <div class="d127-note">Rows are sorted leader to lagger. Dots mark dates each student actually flew.</div>
-        <div id="d127-timeline-wrap" style="position:relative;height:330px"><canvas id="d127-timeline"></canvas></div>
+        <div id="d127-timeline-wrap" style="position:relative;height:330px;width:100%"><canvas id="d127-timeline"></canvas></div>
       </div>
     </div>
     <div class="d127-panel">
@@ -421,7 +421,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
       <div class="d127-h"><span class="d127-t">Overall Progress Bar View</span><span class="d127-s">Ahead at top, lag at bottom</span></div>
       <div class="d127-body">
         <div class="d127-note">X-axis = lesson number, Y-axis = all 28 students.</div>
-        <div style="position:relative;height:560px"><canvas id="d127-overall"></canvas></div>
+        <div style="position:relative;height:560px;width:100%"><canvas id="d127-overall"></canvas></div>
       </div>
     </div>
   </div>
@@ -861,7 +861,7 @@ function renderPlans(){
 
 // ── AP127 DETAIL ──
 function ap127FmtDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}catch{return ds;}}
-function ap127ShortDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"2-digit"});}catch{return ds;}}
+function ap127ShortDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}catch{return ds;}}
 function ap127FlightMins(f){return f.actual_mins||f.mins||0;}
 function ap127Hours(s){const cur=G?.cur127||[];const lessonsMap={};cur.forEach(c=>{lessonsMap[c.lesson]=c.planned_mins||0;});return ((s.flown||[]).reduce((a,f)=>a+(lessonsMap[f.lesson]||ap127FlightMins(f)),0))/60;}
 function ap127CurriculumHours(){return ((G?.cur127||[]).reduce((a,c)=>a+(c.planned_mins||c.mins||0),0))/60;}
@@ -916,6 +916,12 @@ function renderAP127Detail(){
   AP127_VIEW_ROWS=rows;
   const tbody=document.getElementById("d127-rows");
   const today=new Date().toISOString().slice(0,10);
+  const paced=ap127PaceSort(all,maxDate);
+  const leaderDone=paced[0]?.done||0,lagDone=paced.at(-1)?.done||0;
+  const spread=Math.max(leaderDone-lagDone,1),step=Math.max(Math.ceil(spread/3),1);
+  const aheadLo=leaderDone-step+1,midLo=leaderDone-step*2+1;
+  const bandColors={AHEAD:"#7be9b8",MID:"#ffd67a",BEHIND:"#ffa0a0"};
+  const getBandColor=(done)=>{if(done>=aheadLo)return bandColors.AHEAD;if(done>=midLo)return bandColors.MID;return bandColors.BEHIND;};
   tbody.innerHTML=rows.map((s,idx)=>{
     const rank=idx+1,pct=curriculum?((s.done||0)/curriculum*100):0;
     const hrs=ap127Hours(s);
@@ -924,8 +930,9 @@ function renderAP127Detail(){
     const dayDelta=ap127DayDelta(s,planMap,today);
     const dayDeltaTxt=dayDelta===null?"-":(dayDelta>=0?`+${dayDelta}d`:`${dayDelta}d`);
     const dayDeltaColor=dayDelta===null?"":dayDelta>0?"#ff6b6b":"#51cf66";
+    const rankColor=getBandColor(s.done||0);
     const last=(s.flown||[]).at(-1)||{};
-    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank ${ap127RankClass(rank,rows.length||1)}">${rank}</span></td><td class="d127-mono">${String(idx+1).padStart(2,"0")}</td><td><div class="d127-name">${s.name}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono">${s.catc_id||"-"}</td><td class="d127-mono">${s.done||0}</td><td><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono">${pct.toFixed(1)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td></tr>`;
+    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td class="d127-mono">${String(idx+1).padStart(2,"0")}</td><td><div class="d127-name">${s.name}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono">${s.catc_id||"-"}</td><td class="d127-mono">${s.done||0}</td><td style="position:relative;padding:0"><span class="d127-pbg" style="margin:0"><span class="d127-pf" style="width:${pct.toFixed(1)}%;display:flex;align-items:center;justify-content:flex-end;padding-right:4px"><span class="d127-mono" style="font-size:9px;color:#000;font-weight:600">${pct.toFixed(0)}%</span></span></span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td></tr>`;
   }).join("");
   const updTxt=G._updated?new Date(G._updated).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
   document.getElementById("d127-asof").textContent=`Updated ${updTxt}`;
@@ -1017,7 +1024,7 @@ function buildAP127Timeline(all,curriculum,maxDate){
           reverse:true,
           min:.5,
           max:sorted.length+.5,
-          afterFit:scale=>{scale.width=220;},
+          afterFit:scale=>{scale.width=100;},
           ticks:{
             stepSize:1,
             autoSkip:false,
@@ -1037,7 +1044,7 @@ function buildAP127Timeline(all,curriculum,maxDate){
   document.getElementById("d127-tl-meta").textContent=lead&&lag?`Leader ${lead.nick||lead.name.split(" ")[0]} (${lead.done||0}/${curriculum}) · Lag ${lag.nick||lag.name.split(" ")[0]} (${lag.done||0}/${curriculum})`:"-";
 }
 
-const AP127_RACE_VISIBILITY={};function buildAP127RaceChart(all,curriculum,maxDate){const racers=ap127PaceSort(all,maxDate);const today=new Date().toISOString().slice(0,10);const plannedDates=(G.cur127||[]).map(c=>c.planned_date).filter(d=>d&&d<=today).sort();const dateSet=new Set(plannedDates);dateSet.add(today);racers.forEach(s=>(s.flown||[]).forEach(f=>{if(f.date&&f.date<=today)dateSet.add(f.date);}));const labels=[...dateSet].sort();const cumSeries=(dates)=>{const cnt={};dates.forEach(d=>{cnt[d]=(cnt[d]||0)+1;});let run=0;return labels.map(d=>{run+=(cnt[d]||0);return run;});};const datasets=[{label:"Planned Target",data:cumSeries(plannedDates),borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2}];const allDatasets=[{label:"Planned Target",data:cumSeries(plannedDates),borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2}];racers.forEach((s,i)=>{const hue=(i*360/Math.max(racers.length,1)).toFixed(0);const ad=(s.flown||[]).map(f=>f.date).filter(d=>d&&d<=today).sort();const nick=s.nick||s.name;allDatasets.push({label:nick,data:cumSeries(ad),borderColor:`hsla(${hue},85%,62%,0.72)`,pointRadius:0,tension:.18,borderWidth:1.15,hidden:false});if(AP127_RACE_VISIBILITY[nick]!==false){datasets.push({label:nick,data:cumSeries(ad),borderColor:`hsla(${hue},85%,62%,0.72)`,pointRadius:0,tension:.18,borderWidth:1.15});}});CHARTS.ap127race=mkC("d127-race",{type:"line",data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:(ctx)=>ap127FmtDate(ctx[0]?.label||"")}}},scales:{x:{ticks:{font:{family:"JetBrains Mono",size:8},color:"#6e7681",maxTicksLimit:18},grid:{color:"#21262d"}},y:{beginAtZero:true,ticks:{font:{family:"JetBrains Mono",size:9},color:"#8b949e"},grid:{color:"#21262d"}}}}});const togglesDiv=document.getElementById("d127-race-toggles");togglesDiv.innerHTML=`<button onclick="ap127ToggleRaceAll(true)" style="padding:4px 8px;background:#4ade80;color:#000;border:0;border-radius:3px;cursor:pointer;font-weight:600;font-size:10px">✓ All</button><button onclick="ap127ToggleRaceAll(false)" style="padding:4px 8px;background:#ef4444;color:#fff;border:0;border-radius:3px;cursor:pointer;font-weight:600;font-size:10px">✗ None</button>`;racers.forEach(s=>{const nick=s.nick||s.name;const isVisible=AP127_RACE_VISIBILITY[nick]!==false;const btn=document.createElement("button");btn.textContent=nick;btn.style.padding="4px 8px";btn.style.background=isVisible?"#38bdf8":"#6e7681";btn.style.color="#000";btn.style.border="0";btn.style.borderRadius="3px";btn.style.cursor="pointer";btn.style.fontSize="10px";btn.style.fontFamily="JetBrains Mono";btn.onclick=()=>ap127ToggleRaceStudent(nick);togglesDiv.appendChild(btn);});document.getElementById("d127-race-meta").textContent=`${all.length} students · actual to ${ap127FmtDate(today)} · planned baseline`;}function ap127ToggleRaceStudent(nick){AP127_RACE_VISIBILITY[nick]=!AP127_RACE_VISIBILITY[nick];buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");}function ap127ToggleRaceAll(show){G.ap127?.forEach(s=>{const nick=s.nick||s.name;AP127_RACE_VISIBILITY[nick]=show;});buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");}
+const AP127_RACE_VISIBILITY={};function buildAP127RaceChart(all,curriculum,maxDate){const racers=ap127PaceSort(all,maxDate);const today=new Date().toISOString().slice(0,10);const plannedDates=(G.cur127||[]).map(c=>c.planned_date).filter(d=>d&&d<=today).sort();const dateSet=new Set(plannedDates);dateSet.add(today);racers.forEach(s=>(s.flown||[]).forEach(f=>{if(f.date&&f.date<=today)dateSet.add(f.date);}));const labels=[...dateSet].sort();const cumSeries=(dates)=>{const cnt={};dates.forEach(d=>{cnt[d]=(cnt[d]||0)+1;});let run=0;return labels.map(d=>{run+=(cnt[d]||0);return run;});};const datasets=[{label:"Planned Target",data:cumSeries(plannedDates),borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2}];const allDatasets=[{label:"Planned Target",data:cumSeries(plannedDates),borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2}];racers.forEach((s,i)=>{const hue=(i*360/Math.max(racers.length,1)).toFixed(0);const ad=(s.flown||[]).map(f=>f.date).filter(d=>d&&d<=today).sort();const nick=s.nick||s.name;allDatasets.push({label:nick,data:cumSeries(ad),borderColor:`hsla(${hue},85%,62%,0.72)`,pointRadius:2.5,pointHoverRadius:3.5,pointBackgroundColor:`hsla(${hue},85%,62%,0.9)`,tension:.18,borderWidth:1.15,hidden:false});if(AP127_RACE_VISIBILITY[nick]!==false){datasets.push({label:nick,data:cumSeries(ad),borderColor:`hsla(${hue},85%,62%,0.72)`,pointRadius:2.5,pointHoverRadius:3.5,pointBackgroundColor:`hsla(${hue},85%,62%,0.9)`,tension:.18,borderWidth:1.15});}});CHARTS.ap127race=mkC("d127-race",{type:"line",data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:(ctx)=>ap127FmtDate(ctx[0]?.label||"")}}},scales:{x:{ticks:{font:{family:"JetBrains Mono",size:8},color:"#6e7681",maxTicksLimit:18},grid:{color:"#21262d"}},y:{beginAtZero:true,ticks:{font:{family:"JetBrains Mono",size:9},color:"#8b949e"},grid:{color:"#21262d"}}}}});const togglesDiv=document.getElementById("d127-race-toggles");togglesDiv.innerHTML=`<button onclick="ap127ToggleRaceAll(true)" style="padding:4px 8px;background:#4ade80;color:#000;border:0;border-radius:3px;cursor:pointer;font-weight:600;font-size:10px">✓ All</button><button onclick="ap127ToggleRaceAll(false)" style="padding:4px 8px;background:#ef4444;color:#fff;border:0;border-radius:3px;cursor:pointer;font-weight:600;font-size:10px">✗ None</button>`;racers.forEach(s=>{const nick=s.nick||s.name;const isVisible=AP127_RACE_VISIBILITY[nick]!==false;const btn=document.createElement("button");btn.textContent=nick;btn.style.padding="4px 8px";btn.style.background=isVisible?"#38bdf8":"#6e7681";btn.style.color="#000";btn.style.border="0";btn.style.borderRadius="3px";btn.style.cursor="pointer";btn.style.fontSize="10px";btn.style.fontFamily="JetBrains Mono";btn.onclick=()=>ap127ToggleRaceStudent(nick);togglesDiv.appendChild(btn);});document.getElementById("d127-race-meta").textContent=`${all.length} students · actual to ${ap127FmtDate(today)} · planned baseline`;}function ap127ToggleRaceStudent(nick){AP127_RACE_VISIBILITY[nick]=!AP127_RACE_VISIBILITY[nick];buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");}function ap127ToggleRaceAll(show){G.ap127?.forEach(s=>{const nick=s.nick||s.name;AP127_RACE_VISIBILITY[nick]=show;});buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");}
 
 function buildAP127OverallChart(all,curriculum,maxDate){
   const sorted=ap127PaceSort(all,maxDate);
@@ -1071,7 +1078,7 @@ function buildAP127OverallChart(all,curriculum,maxDate){
           grid:{color:"#21262d"}
         },
         y:{
-          afterFit:scale=>{scale.width=220;},
+          afterFit:scale=>{scale.width=100;},
           ticks:{font:{family:"JetBrains Mono",size:8},color:"#8b949e",autoSkip:false},
           grid:{color:"#21262d"}
         }
