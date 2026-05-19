@@ -1058,11 +1058,12 @@ function buildAP127RaceChart(all,curriculum,maxDate){
       return {y:run,r:flightSet.has(d)?3:0};
     });
   };
+  const planCnt={};plannedDates.forEach(d=>{planCnt[d]=(planCnt[d]||0)+1;});
+  let planRun=0;const planData=labels.map(d=>{planRun+=(planCnt[d]||0);return planRun;});
   const datasets=[{
     label:"Planned Target",
-    data:(()=>{const cnt={};plannedDates.forEach(d=>{cnt[d]=(cnt[d]||0)+1;});let run=0;return labels.map(d=>{run+=(cnt[d]||0);return run;});}()),
-    borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2,
-    parsing:{yAxisKey:"y"}
+    data:planData,
+    borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2
   }];
   racers.forEach((s,i)=>{
     const hue=(i*360/Math.max(racers.length,1)).toFixed(0);
