@@ -598,6 +598,22 @@ const HOL=new Set(["2026-05-01","2026-05-04","2026-05-13","2026-06-01","2026-06-
 const BC={AP124:"#c084fc",AP126:"#38bdf8",AP127:"#fb923c",AP129:"#4ade80"};
 const BB={AP124:"rgba(192,132,252,.12)",AP126:"rgba(56,189,248,.12)",AP127:"rgba(251,146,60,.12)",AP129:"rgba(74,222,128,.12)"};
 
+// Register global plugin for "NOW" vertical line on simulation capacity chart
+Chart.register({id:"catcNowLine",afterDraw(chart){
+  const opts=chart.options?.plugins?.catcNowLine;
+  if(!opts?.enabled||opts.idx==null||opts.idx<0)return;
+  const xScale=chart.scales?.x;if(!xScale)return;
+  const x=xScale.getPixelForValue(opts.idx);
+  const{top,bottom}=chart.chartArea;
+  const ctx=chart.ctx;
+  ctx.save();
+  ctx.strokeStyle="rgba(255,255,255,0.22)";ctx.lineWidth=1.5;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);ctx.stroke();
+  ctx.fillStyle="rgba(255,255,255,0.38)";ctx.font="7px 'JetBrains Mono',monospace";
+  ctx.fillText("NOW",x+3,top+10);
+  ctx.restore();
+}});
+
 const APPS_SCRIPT_CODE=`// CATC Flight Dashboard - CSV Relay
 // Deploy: Deploy > New deployment > Web app
 //   Execute as: Me | Who has access: Anyone
@@ -730,7 +746,7 @@ function runScheduler(batchData,curricula,extraBatches=[]){
     const k=b.name;iM[k]={};lwM[k]={};lmM[k]={};schM[k]={};
     for(let i=0;i<(b.n||0);i++){iM[k][i]=0;lwM[k][i]=-99;lmM[k][i]=0;schM[k][i]=[];}
   });
-  const wExtra=extraBatches.map(b=>wds.findIndex(d=>d>=(b.start||"9999")));
+  const wExtra=extraBatches.map(b=>{const i=wds.findIndex(d=>d>=(b.start||"9999"));return i<0?wds.length:i;});
   function elig(b,cur,wi,overN){
     const tot=cur.length,wl=Math.max(horizon-wi,1),n=overN!==undefined?overN:(b==="AP129"?n129:(batchData[b]||[]).length),out=[];
     for(let i=0;i<n;i++){if(iM[b][i]>=tot)continue;const gap=lmM[b][i]>=120?2:1;if((wi-lwM[b][i])<gap)continue;out.push([(tot-iM[b][i])/wl,i]);}
@@ -947,6 +963,7 @@ function runSimulation(){
   CFG.cap=+(capEl?.value)||25;
   CFG.horizon=+(horEl?.value)||800;
   CFG.ap129start=s129El?.value||"2026-06-01";
+  CFG.n129=13;
   const bd={AP124:G.ap124||[],AP126:G.ap126||[],AP127:G.ap127||[]};
   const cur={AP124:G.cur124||[],AP126:G.cur126||[],AP127:G.cur127||[]};
   const t0=Date.now();
@@ -971,14 +988,19 @@ function renderSimulation(){
 function renderSimFinish(){
   if(!SIM_G)return;
   const grid=document.getElementById("sim-finish-grid");if(!grid)return;
+  const today=new Date().toISOString().slice(0,10);
   function fcard(name,col,students,startDate){
     const fins=students.map(s=>s.finish).filter(f=>f&&f!=="COMPLETE"&&f!=="N/A").sort();
     const last=fins.at(-1)||null,first=fins[0]||null;
     const done=students.reduce((a,s)=>a+(s.done||0),0);
     const tot=students.reduce((a,s)=>a+(s.total||0),0);
+    const remaining=tot-done;
     const pct=tot?done/tot*100:0;
     const n=students.length;
     const sub=startDate?`${n} students · starts ${escHtml(startDate)}`:`${n} students · active`;
+    const daysLeft=last?ap127DateDiff(last,today):null;
+    const moLeft=daysLeft!==null?Math.ceil(daysLeft/30.4):null;
+    const moTxt=moLeft!==null?(moLeft>0?moLeft+"mo":"done"):"—";
     return `<div class="sim-fcard" style="border-top-color:${col}">
       <div class="sim-fcard-name" style="color:${col}">${escHtml(name)}</div>
       <div class="sim-fcard-sub">${sub}</div>
@@ -988,6 +1010,8 @@ function renderSimFinish(){
       <div class="sim-fcard-stats">
         <div class="sim-fcard-stat"><div class="sim-fcard-stat-v" style="color:${col}">${pct.toFixed(0)}%</div><div class="sim-fcard-stat-l">Done</div></div>
         <div class="sim-fcard-stat"><div class="sim-fcard-stat-v">${first?fm(first):"—"}</div><div class="sim-fcard-stat-l">First finishes</div></div>
+        <div class="sim-fcard-stat"><div class="sim-fcard-stat-v" style="color:${col}">${moTxt}</div><div class="sim-fcard-stat-l">Months to go</div></div>
+        <div class="sim-fcard-stat"><div class="sim-fcard-stat-v">${remaining.toLocaleString()}</div><div class="sim-fcard-stat-l">Lessons left</div></div>
       </div>
     </div>`;
   }
@@ -1015,12 +1039,14 @@ function buildSimCapacityChart(){
     ...extras.map(b=>({label:b.name,data:v(b.name),backgroundColor:b.color+"bb",stack:"s"})),
     {label:"Cap",data:Array(lbl.length).fill(cap),type:"line",borderColor:"#f59e0b",borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false}
   ];
+  const todayM=new Date().toISOString().slice(0,7);
+  const todayIdx=M.indexOf(todayM);
   const subEl=document.getElementById("sim-cap-sub");
-  if(subEl)subEl.textContent=`Stacked by batch · dashed = ${cap}/day cap · ${extras.length?extras.map(b=>b.name).join(", ")+" included":""}`;
+  if(subEl)subEl.textContent=`Stacked by batch · dashed = ${cap}/day cap${extras.length?" · "+extras.map(b=>b.name).join(", "):""}`;
   CHARTS.simCap=mkC("c-sim-cap",{type:"bar",data:{labels:lbl,datasets},options:{...copts(
     {stacked:true,grid:{color:"#21262d"}},
     {stacked:true,max:Math.max(cap+5,Math.max(...totals,0)+3),grid:{color:"#21262d"}}
-  ),plugins:{...copts().plugins,tooltip:{callbacks:{
+  ),plugins:{...copts().plugins,catcNowLine:{enabled:true,idx:todayIdx},tooltip:{callbacks:{
     title:([ctx])=>M[ctx.dataIndex]||ctx.label,
     afterBody:([ctx])=>`Total: ${(totals[ctx.dataIndex]||0).toFixed(1)} / Cap: ${cap}`
   }}}}});
