@@ -268,12 +268,23 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .sim-fcard-stat-v{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;}
 .sim-fcard-stat-l{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--tx3);margin-top:1px;}
 .sim-hint{color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:10px;padding:20px 0;}
-/* SIM INFO PANEL */
-.sim-info-panel{background:var(--s1);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;}
+/* SIM INFO PANEL (collapsible) */
+details.sim-info-panel{background:var(--s1);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;}
+details.sim-info-panel summary{cursor:pointer;list-style:none;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc);display:flex;align-items:center;gap:6px;user-select:none;outline:none;}
+details.sim-info-panel summary::-webkit-details-marker{display:none;}
+details.sim-info-panel summary::after{content:"▸";margin-left:auto;color:var(--tx3);font-size:10px;transition:transform .2s;}
+details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
 .sim-info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:10px;}
 .sim-info-item{background:var(--s2);border-radius:5px;padding:9px 11px;}
 .sim-info-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
 .sim-info-val{font-family:'Nunito',sans-serif;font-size:11px;color:var(--tx2);line-height:1.5;}
+/* TOGGLE SWITCH */
+.tsw{display:inline-flex;align-items:center;cursor:pointer;gap:0;}
+.tsw input{position:absolute;opacity:0;width:0;height:0;}
+.tsw-track{display:inline-block;width:32px;height:17px;background:var(--bd);border-radius:17px;transition:background .2s;flex-shrink:0;position:relative;}
+.tsw-track::after{content:"";position:absolute;width:11px;height:11px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;}
+.tsw input:checked~.tsw-track{background:var(--c127);}
+.tsw input:checked~.tsw-track::after{transform:translateX(15px);}
 </style>
 </head>
 <body>
@@ -395,12 +406,21 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
       <div class="sim-ctrl-title">Scheduler Parameters</div>
       <div class="sim-ctrl-row">
         <div class="sim-ctrl-item">
-          <div class="sim-ctrl-lbl">Daily Flight Cap</div>
-          <div class="sim-ctrl-desc">Max total flights per day across all batches</div>
+          <div class="sim-ctrl-lbl" id="cap-mode-lbl">Daily Flight Cap</div>
+          <div class="sim-ctrl-desc" id="cap-mode-desc">Max total flights per day across all batches</div>
           <div class="sim-ctrl-val">
             <input type="range" id="sim-cap" min="5" max="50" value="25" oninput="document.getElementById('sim-cap-v').textContent=this.value">
             <span class="sim-rv" id="sim-cap-v">25</span>
-            <span style="font-size:10px;color:var(--tx3)">/day</span>
+            <span style="font-size:10px;color:var(--tx3)" id="cap-mode-unit">/day</span>
+          </div>
+        </div>
+        <div class="sim-ctrl-item">
+          <div class="sim-ctrl-lbl">Cap Mode</div>
+          <div class="sim-ctrl-desc">How daily capacity is measured</div>
+          <div class="sim-ctrl-val" style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;color:var(--tx3)">Flights</span>
+            <label class="tsw"><input type="checkbox" id="sim-hour-mode" onchange="toggleHourMode(this.checked)"><span class="tsw-track"></span></label>
+            <span style="font-size:10px;color:var(--tx3)">Hours</span>
           </div>
         </div>
         <div class="sim-ctrl-item">
@@ -430,8 +450,8 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
       </div>
     </div>
     <!-- How simulation works -->
-    <div class="sim-info-panel">
-      <div class="sim-ctrl-title">How the Simulation Works</div>
+    <details class="sim-info-panel">
+      <summary>How the Simulation Works</summary>
       <div class="sim-info-grid">
         <div class="sim-info-item">
           <div class="sim-info-lbl">Schedule start</div>
@@ -470,7 +490,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
           <div class="sim-info-val">Start from zero — all 101 lessons scheduled from the batch start date onward</div>
         </div>
       </div>
-    </div>
+    </details>
     <!-- Finish date projection -->
     <div>
       <div class="sim-ctrl-title" style="margin-bottom:10px">Estimated Finish Dates</div>
@@ -480,7 +500,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
     </div>
     <!-- Capacity chart -->
     <div class="cb">
-      <div class="ch">Monthly Flight Capacity — avg flights/workday per batch</div>
+      <div class="ch" id="sim-cap-title">Monthly Flight Capacity — avg flights/workday per batch</div>
       <div class="cs" id="sim-cap-sub">Stacked by batch · dashed = daily cap · run simulation to update</div>
       <div style="position:relative;height:310px"><canvas id="c-sim-cap"></canvas></div>
     </div>
@@ -695,7 +715,7 @@ function doGet(e) {
 const DEFAULT_RELAY_URL="__RELAY_URL__";
 const ADMIN_PASSWORD_HASH="__ADMIN_HASH__";
 let ADMIN_UNLOCKED=false;
-let CFG={cap:25,n129:13,ap129start:"2026-06-01",horizon:800,recents:3,upcomings:8,cardH:190,chartH:190,showRest:true,showNextTag:true,relayUrl:DEFAULT_RELAY_URL,layout:{main:"2col",batch:"3b"}};
+let CFG={cap:25,n129:13,ap129start:"2026-06-01",horizon:800,hourMode:false,recents:3,upcomings:8,cardH:190,chartH:190,showRest:true,showNextTag:true,relayUrl:DEFAULT_RELAY_URL,layout:{main:"2col",batch:"3b"}};
 let G=null,AB="ALL",calY=2026,calM=4;
 const CHARTS={};
 let AP127_VIEW_ROWS=[];
@@ -778,7 +798,7 @@ function parseCSV(text,batch){
 function isWD(ds){const d=new Date(ds+"T12:00:00Z"),dw=d.getUTCDay();return dw!==0&&dw!==6&&!HOL.has(ds);}
 function getWDs(s,n){const a=[];let d=new Date(s+"T12:00:00Z");while(a.length<n){const ds=d.toISOString().slice(0,10);if(isWD(ds))a.push(ds);d.setUTCDate(d.getUTCDate()+1);}return a;}
 
-function runScheduler(batchData,curricula,extraBatches=[],startDate=""){
+function runScheduler(batchData,curricula,extraBatches=[],startDate="",hourMode=false){
   const{cap,n129,ap129start,horizon}=CFG;
   const wds=getWDs(startDate||"2026-05-05",horizon);
   const w129=wds.findIndex(d=>d>=ap129start);
@@ -814,29 +834,29 @@ function runScheduler(batchData,curricula,extraBatches=[],startDate=""){
     let slots=cap;
     ["AP124","AP126","AP127"].forEach(b=>{
       if(slots<=0)return;const cur=curricula[b]||[];
-      for(const[,i]of elig(b,cur,wi)){if(slots<=0)break;const ix=iM[b][i];if(ix>=cur.length)continue;const p=cur[ix];schM[b][i].push([ds,p.lesson,p.planned_mins]);lwM[b][i]=wi;lmM[b][i]=p.planned_mins;iM[b][i]=ix+1;slots--;}
+      for(const[,i]of elig(b,cur,wi)){if(slots<=0)break;const ix=iM[b][i];if(ix>=cur.length)continue;const p=cur[ix];const cost=hourMode?p.planned_mins/60:1;if(slots<cost)continue;schM[b][i].push([ds,p.lesson,p.planned_mins]);lwM[b][i]=wi;lmM[b][i]=p.planned_mins;iM[b][i]=ix+1;slots-=cost;}
     });
-    if(slots>0&&wi>=w129)for(const[,i]of elig("AP129",cur129,wi)){if(slots<=0)break;const ix=iM.AP129[i];if(ix>=cur129.length)continue;const p=cur129[ix];schM.AP129[i].push([ds,p.lesson,p.planned_mins]);lwM.AP129[i]=wi;lmM.AP129[i]=p.planned_mins;iM.AP129[i]=ix+1;slots--;}
+    if(slots>0&&wi>=w129)for(const[,i]of elig("AP129",cur129,wi)){if(slots<=0)break;const ix=iM.AP129[i];if(ix>=cur129.length)continue;const p=cur129[ix];const cost=hourMode?p.planned_mins/60:1;if(slots<cost)continue;schM.AP129[i].push([ds,p.lesson,p.planned_mins]);lwM.AP129[i]=wi;lmM.AP129[i]=p.planned_mins;iM.AP129[i]=ix+1;slots-=cost;}
     extraBatches.forEach((b,bi)=>{
       if(slots<=0||wi<wExtra[bi])return;
       const k=b.name;
-      for(const[,i]of elig(k,cur129,wi,b.n)){if(slots<=0)break;const ix=iM[k][i];if(ix>=cur129.length)continue;const p=cur129[ix];schM[k][i].push([ds,p.lesson,p.planned_mins]);lwM[k][i]=wi;lmM[k][i]=p.planned_mins;iM[k][i]=ix+1;slots--;}
+      for(const[,i]of elig(k,cur129,wi,b.n)){if(slots<=0)break;const ix=iM[k][i];if(ix>=cur129.length)continue;const p=cur129[ix];const cost=hourMode?p.planned_mins/60:1;if(slots<cost)continue;schM[k][i].push([ds,p.lesson,p.planned_mins]);lwM[k][i]=wi;lmM[k][i]=p.planned_mins;iM[k][i]=ix+1;slots-=cost;}
     });
   });
   const dc={},wpm={};wds.forEach(d=>{const m=d.slice(0,7);wpm[m]=(wpm[m]||0)+1;});
   ["AP124","AP126","AP127","AP129"].forEach(b=>{
     const n=b==="AP129"?n129:(batchData[b]||[]).length;
-    for(let i=0;i<n;i++)for(const[ds]of schM[b][i]||[]){const m=ds.slice(0,7);if(!dc[m])dc[m]={t:0,"124":0,"126":0,"127":0,"129":0};dc[m].t++;dc[m][b.replace("AP","")]++;}
+    for(let i=0;i<n;i++)for(const[ds,,mins]of schM[b][i]||[]){const m=ds.slice(0,7);const val=hourMode?(mins||60)/60:1;if(!dc[m])dc[m]={t:0,"124":0,"126":0,"127":0,"129":0};dc[m].t+=val;dc[m][b.replace("AP","")]+=val;}
   });
   extraBatches.forEach(b=>{
-    for(let i=0;i<(b.n||0);i++)for(const[ds]of schM[b.name][i]||[]){const m=ds.slice(0,7);if(!dc[m])dc[m]={t:0,"124":0,"126":0,"127":0,"129":0};dc[m].t++;dc[m][b.name]=(dc[m][b.name]||0)+1;}
+    for(let i=0;i<(b.n||0);i++)for(const[ds,,mins]of schM[b.name][i]||[]){const m=ds.slice(0,7);const val=hourMode?(mins||60)/60:1;if(!dc[m])dc[m]={t:0,"124":0,"126":0,"127":0,"129":0};dc[m].t+=val;dc[m][b.name]=(dc[m][b.name]||0)+val;}
   });
   const monthly={};Object.entries(dc).forEach(([m,v])=>{const w=wpm[m]||1;const mo={t:+(v.t/w).toFixed(1),"124":+(v["124"]/w).toFixed(1),"126":+(v["126"]/w).toFixed(1),"127":+(v["127"]/w).toFixed(1),"129":+(v["129"]/w).toFixed(1)};extraBatches.forEach(b=>{mo[b.name]=+((v[b.name]||0)/w).toFixed(1);});monthly[m]=mo;});
   function mkSt(b,st,cur,sd){
     if(b==="AP129")return Array.from({length:n129},(_,i)=>({catc_id:"AP129-"+String(i+1).padStart(2,"0"),name:"Student "+String(i+1).padStart(2,"0"),batch:"AP129",done:0,total:cur.length,remaining:cur.length,pct:0,flown:[],next_lesson:cur[0]?.lesson||"",planned:(sd[i]||[]).map(p=>Array.isArray(p)?{date:p[0],lesson:p[1],mins:p[2]}:p),planned_total:(sd[i]||[]).length,finish:(sd[i]||[]).at(-1)?.[0]||(sd[i]||[]).at(-1)?.date||"N/A"}));
     return(st||[]).map((s,i)=>{const pl=sd[i]||[];const pl2=pl.map(p=>Array.isArray(p)?{date:p[0],lesson:p[1],mins:p[2]}:p);return{...s,planned:pl2,planned_total:pl2.length,finish:pl2.at(-1)?.date||pl.at(-1)?.[0]||(s.remaining===0?"COMPLETE":"N/A")};});
   }
-  const result={ap124:mkSt("AP124",batchData.AP124,curricula.AP124||[],schM.AP124),ap126:mkSt("AP126",batchData.AP126,curricula.AP126||[],schM.AP126),ap127:mkSt("AP127",batchData.AP127,curricula.AP127||[],schM.AP127),ap129:mkSt("AP129",[],cur129,schM.AP129),monthly,cap,cur124:curricula.AP124,cur126:curricula.AP126,cur127:curricula.AP127};
+  const result={ap124:mkSt("AP124",batchData.AP124,curricula.AP124||[],schM.AP124),ap126:mkSt("AP126",batchData.AP126,curricula.AP126||[],schM.AP126),ap127:mkSt("AP127",batchData.AP127,curricula.AP127||[],schM.AP127),ap129:mkSt("AP129",[],cur129,schM.AP129),monthly,cap,hourMode,cur124:curricula.AP124,cur126:curricula.AP126,cur127:curricula.AP127};
   extraBatches.forEach(b=>{
     result["extra_"+b.name]=Array.from({length:b.n||0},(_,i)=>({catc_id:b.name+"-"+String(i+1).padStart(2,"0"),name:"Student "+String(i+1).padStart(2,"0"),batch:b.name,done:0,total:cur129.length,remaining:cur129.length,pct:0,flown:[],next_lesson:cur129[0]?.lesson||"",planned:(schM[b.name][i]||[]).map(p=>Array.isArray(p)?{date:p[0],lesson:p[1],mins:p[2]}:p),planned_total:(schM[b.name][i]||[]).length,finish:(schM[b.name][i]||[]).at(-1)?.[0]||"N/A"}));
   });
@@ -1027,7 +1047,7 @@ function runSimulation(){
   const t0=Date.now();
   const _d=new Date(Date.now()+7*3600000);_d.setUTCDate(_d.getUTCDate()+1);
   const tomorrowBKK=_d.toISOString().slice(0,10);
-  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,tomorrowBKK);
+  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,tomorrowBKK,CFG.hourMode||false);
   SIM_G.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
   const ms=Date.now()-t0;
   const statusEl=document.getElementById("sim-status");
@@ -1082,11 +1102,23 @@ function renderSimFinish(){
   (SIM_G.extra_batches||[]).forEach(b=>{html+=fcard(b.name,b.color,SIM_G["extra_"+b.name]||[],b.start);});
   grid.innerHTML=html;
 }
+function toggleHourMode(isHour){
+  CFG.hourMode=isHour;
+  document.getElementById("cap-mode-lbl").textContent=isHour?"Daily Hour Cap":"Daily Flight Cap";
+  document.getElementById("cap-mode-desc").textContent=isHour?"Max total flight hours per day across all batches":"Max total flights per day across all batches";
+  document.getElementById("cap-mode-unit").textContent=isHour?"hrs/day":"/day";
+  const capEl=document.getElementById("sim-cap");
+  if(isHour){capEl.max="200";capEl.step="5";capEl.value=40;}
+  else{capEl.max="50";capEl.step="1";capEl.value=25;}
+  document.getElementById("sim-cap-v").textContent=capEl.value;
+}
 function buildSimCapacityChart(){
   if(!SIM_G)return;
   const monthly=SIM_G.monthly||{};
   const M=Object.keys(monthly).sort();if(!M.length)return;
   const cap=CFG.cap;
+  const isHour=SIM_G.hourMode||false;
+  const unit=isHour?"hrs":"flights";
   const lbl=M.map(m=>{const[y,mo]=m.split("-");return["","J","F","M","A","M","J","J","A","S","O","N","D"][+mo]+"'"+y.slice(2);});
   const v=k=>M.map(m=>(monthly[m]||{})[k]||0);
   const extras=SIM_G.extra_batches||[];
@@ -1101,14 +1133,16 @@ function buildSimCapacityChart(){
   ];
   const todayM=new Date().toISOString().slice(0,7);
   const todayIdx=M.indexOf(todayM);
+  const titleEl=document.getElementById("sim-cap-title");
+  if(titleEl)titleEl.textContent=isHour?"Monthly Flight Hours — avg hrs/workday per batch":"Monthly Flight Capacity — avg flights/workday per batch";
   const subEl=document.getElementById("sim-cap-sub");
-  if(subEl)subEl.textContent=`Stacked by batch · dashed = ${cap}/day cap${extras.length?" · "+extras.map(b=>b.name).join(", "):""}`;
+  if(subEl)subEl.textContent=`Stacked by batch · dashed = ${cap} ${isHour?"hrs":""}/day cap${extras.length?" · "+extras.map(b=>b.name).join(", "):""}`;
   CHARTS.simCap=mkC("c-sim-cap",{type:"bar",data:{labels:lbl,datasets},options:{...copts(
     {stacked:true,grid:{color:"#21262d"}},
-    {stacked:true,max:Math.max(cap+5,Math.max(...totals,0)+3),grid:{color:"#21262d"}}
+    {stacked:true,max:Math.max(cap+5,Math.max(...totals,0)+3),grid:{color:"#21262d"},title:{display:true,text:isHour?"avg hrs / workday":"avg flights / workday",color:"#8b949e",font:{size:9,family:"JetBrains Mono, monospace"}}}
   ),plugins:{...copts().plugins,catcNowLine:{enabled:true,idx:todayIdx},tooltip:{callbacks:{
     title:([ctx])=>M[ctx.dataIndex]||ctx.label,
-    afterBody:([ctx])=>`Total: ${(totals[ctx.dataIndex]||0).toFixed(1)} / Cap: ${cap}`
+    afterBody:([ctx])=>`Total: ${(totals[ctx.dataIndex]||0).toFixed(1)} ${unit} / Cap: ${cap}${isHour?" hrs":""}/day`
   }}}}});
 }
 function showSimSub(name,el){
