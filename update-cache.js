@@ -70,14 +70,23 @@ function getWDs(s, n) {
 }
 function runScheduler(batchData, curricula) {
   const {cap, n129, ap129start, horizon} = CFG;
-  const todayBKK = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
-  const wds = getWDs(todayBKK, horizon);
+  const _d = new Date(Date.now() + 7 * 3600000); _d.setUTCDate(_d.getUTCDate() + 1);
+  const tomorrowBKK = _d.toISOString().slice(0, 10);
+  const wds = getWDs(tomorrowBKK, horizon);
   const w129 = wds.findIndex(d => d >= ap129start);
   const cur129 = curricula.AP127 || curricula.AP126 || [];
+  function computeLwM(ld) {
+    if (!ld || !wds[0]) return -99;
+    let cnt = 0, d = new Date(ld + "T12:00:00Z");
+    d.setUTCDate(d.getUTCDate() + 1);
+    const end = new Date(wds[0] + "T12:00:00Z");
+    while (d <= end && cnt <= 20) { if (isWD(d.toISOString().slice(0,10))) cnt++; d.setUTCDate(d.getUTCDate()+1); }
+    return -cnt;
+  }
   const iM = {}, lwM = {}, lmM = {}, schM = {};
   ["AP124","AP126","AP127"].forEach(b => {
     const st = batchData[b] || []; iM[b]={}; lwM[b]={}; lmM[b]={}; schM[b]={};
-    st.forEach((s,i) => { iM[b][i]=s.done; lwM[b][i]=-99; lmM[b][i]=s.flown?.at(-1)?.actual_mins||0; schM[b][i]=[]; });
+    st.forEach((s,i) => { const ld=s.flown?.at(-1)?.date||""; iM[b][i]=s.done; lwM[b][i]=computeLwM(ld); lmM[b][i]=s.flown?.at(-1)?.actual_mins||0; schM[b][i]=[]; });
   });
   iM.AP129={}; lwM.AP129={}; lmM.AP129={}; schM.AP129={};
   for (let i = 0; i < n129; i++) { iM.AP129[i]=0; lwM.AP129[i]=-99; lmM.AP129[i]=0; schM.AP129[i]=[]; }

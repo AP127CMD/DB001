@@ -783,10 +783,20 @@ function runScheduler(batchData,curricula,extraBatches=[],startDate=""){
   const wds=getWDs(startDate||"2026-05-05",horizon);
   const w129=wds.findIndex(d=>d>=ap129start);
   const cur129=curricula.AP127||curricula.AP126||[];
+  // Compute virtual workday index (negative) for last-flight date relative to wds[0]
+  // so eligibility gaps are respected from the real last flight, not reset to -99
+  function computeLwM(ld){
+    if(!ld||!wds[0])return -99;
+    let cnt=0,d=new Date(ld+"T12:00:00Z");
+    d.setUTCDate(d.getUTCDate()+1);
+    const end=new Date(wds[0]+"T12:00:00Z");
+    while(d<=end&&cnt<=20){if(isWD(d.toISOString().slice(0,10)))cnt++;d.setUTCDate(d.getUTCDate()+1);}
+    return -cnt;
+  }
   const iM={},lwM={},lmM={},schM={};
   ["AP124","AP126","AP127"].forEach(b=>{
     const st=batchData[b]||[];iM[b]={};lwM[b]={};lmM[b]={};schM[b]={};
-    st.forEach((s,i)=>{iM[b][i]=s.done;lwM[b][i]=-99;lmM[b][i]=s.flown?.at(-1)?.actual_mins||0;schM[b][i]=[];});
+    st.forEach((s,i)=>{const ld=s.flown?.at(-1)?.date||"";iM[b][i]=s.done;lwM[b][i]=computeLwM(ld);lmM[b][i]=s.flown?.at(-1)?.actual_mins||0;schM[b][i]=[];});
   });
   iM.AP129={};lwM.AP129={};lmM.AP129={};schM.AP129={};
   for(let i=0;i<n129;i++){iM.AP129[i]=0;lwM.AP129[i]=-99;lmM.AP129[i]=0;schM.AP129[i]=[];}
@@ -1015,8 +1025,9 @@ function runSimulation(){
   const bd={AP124:G.ap124||[],AP126:G.ap126||[],AP127:G.ap127||[]};
   const cur={AP124:G.cur124||[],AP126:G.cur126||[],AP127:G.cur127||[]};
   const t0=Date.now();
-  const todayBKK=new Date(Date.now()+7*3600000).toISOString().slice(0,10);
-  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,todayBKK);
+  const _d=new Date(Date.now()+7*3600000);_d.setUTCDate(_d.getUTCDate()+1);
+  const tomorrowBKK=_d.toISOString().slice(0,10);
+  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,tomorrowBKK);
   SIM_G.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
   const ms=Date.now()-t0;
   const statusEl=document.getElementById("sim-status");
