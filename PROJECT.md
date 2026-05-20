@@ -154,15 +154,23 @@ AP127_NICKS = ["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN",
 
 ## 7. Pages / Navigation
 
+Main nav tabs:
+
 | Nav label | Page ID | Render function | Batch filter applies? |
 |---|---|---|---|
 | AP127 Detail | `page-ap127detail` | `renderAP127Detail()` | No |
 | School's Performance | `page-performance` | `renderPerformance()` | No |
-| **Capacity** *(new)* | `page-capacity` | `renderCapacity()` | No |
-| Overview | `page-overview` | `renderStats()` + charts | No |
-| Flight Plans | `page-plans` | `renderPlans()` | Yes |
-| Calendar | `page-calendar` | `renderCal()` | Yes |
+| **Simulation** | `page-simulation` | `renderSimulation()` | No |
 | ⚙ Admin | `page-admin` | — (password-gated) | No |
+
+Simulation sub-nav (visible only when Simulation is active):
+
+| Sub-nav label | Page ID | Notes |
+|---|---|---|
+| ◈ Simulation | `page-simulation` | Finish cards + capacity chart + controls |
+| Overview | `page-overview` | `renderStats()` + charts |
+| Flight Plans | `page-plans` | Batch filter applies |
+| Calendar | `page-calendar` | Batch filter applies |
 
 ---
 
@@ -322,7 +330,8 @@ Push to main
 
 | Date | Commit | Description |
 |---|---|---|
-| 2026-05-19 | (pending) | **feat:** student ranking table redesign (call sign column, IDLE days, DAY delta with color coding) · hours calculated from curriculum planned time · timeline with connecting lines and gaps · race chart with toggles per student · consistent call sign usage across all views |
+| 2026-05-20 | (pending) | **feat:** SIMULATION overhaul — renamed Capacity→Simulation, sub-nav (Simulation/Overview/Flight Plans/Calendar), finish-date projection cards per batch, extra batch support (name/n/start), extended scheduler for extra batches, capacity chart in simulation page |
+| 2026-05-19 | (pending) | **feat:** student ranking table redesign (call sign column, IDLE days, DAY delta with color coding) · Hrs Delta column · hours calculated from curriculum planned time · timeline with connecting lines · race chart solo toggle · consistent call sign usage across all views |
 | 2026-05-11 | `ad29c3a` | **feat:** status bands · capacity page · mobile nav hamburger · timezone fix |
 | 2026-05-10 | `7f5ac65` | chore: automated cache updates |
 | (earlier) | | Chrome cache bypass fix; Node v20→v22; admin password hashing; AP127 pace bands |

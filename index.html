@@ -226,7 +226,48 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .pf-filter .pt{margin-bottom:7px;color:var(--adm);}
 .pf-filter .fr{margin-bottom:0;}
 .pf-filter .fr input,.pf-filter .fr select{background:var(--s2);}
-@media(max-width:900px){nav{align-items:flex-start;padding-bottom:6px}.navgrp{order:3;width:100%;margin-top:4px}.nright{margin-left:0}.ss{grid-template-columns:repeat(2,1fr);}.cr.c2,.cr.c3{grid-template-columns:1fr;}.sg{grid-template-columns:1fr;}.lg-grid{grid-template-columns:repeat(2,1fr);}.d127-kpis{grid-template-columns:repeat(2,1fr);}.d127-grid,.d127-dg{grid-template-columns:1fr;}.d127-table{min-width:690px}.d127-table th,.d127-table td{padding:6px 4px;font-size:9.5px}.d127-pbg{width:52px}.d127-table th:nth-child(2),.d127-table td:nth-child(2),.d127-table th:nth-child(4),.d127-table td:nth-child(4){display:none;}#nav-toggle{display:flex;}.navgrp .bts{display:none;}.navgrp .bts.open{display:flex;flex-wrap:wrap;gap:4px;padding-top:4px;}.bt{padding:8px 14px;font-size:12px;}}
+@media(max-width:900px){nav{align-items:flex-start;padding-bottom:6px}.nright{margin-left:0}.ss{grid-template-columns:repeat(2,1fr);}.cr.c2,.cr.c3{grid-template-columns:1fr;}.sg{grid-template-columns:1fr;}.lg-grid{grid-template-columns:repeat(2,1fr);}.d127-kpis{grid-template-columns:repeat(2,1fr);}.d127-grid,.d127-dg{grid-template-columns:1fr;}.d127-table{min-width:690px}.d127-table th,.d127-table td{padding:6px 4px;font-size:9.5px}.d127-pbg{width:52px}.d127-table th:nth-child(2),.d127-table td:nth-child(2),.d127-table th:nth-child(4),.d127-table td:nth-child(4){display:none;}#sim-subnav{flex-wrap:nowrap;overflow-x:auto;}.sim-finish-grid{grid-template-columns:1fr;}.sim-ctrl-row{grid-template-columns:1fr;}.bt{padding:8px 14px;font-size:12px;}}
+/* SIMULATION SUB-NAV */
+#sim-subnav{display:none;position:sticky;top:47px;z-index:298;background:rgba(13,17,23,.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);padding:0 14px;gap:0;align-items:center;flex-wrap:wrap;}
+#sim-subnav.show{display:flex;}
+.snt{padding:10px 11px;cursor:pointer;font-size:9px;font-weight:700;color:var(--tx3);border-bottom:2px solid transparent;text-transform:uppercase;letter-spacing:.8px;transition:all .15s;user-select:none;white-space:nowrap;}
+.snt:hover{color:var(--tx);}.snt.active{color:var(--c127);border-bottom-color:var(--c127);}
+/* SIMULATION PAGE */
+.sim-wrap{display:grid;gap:12px;}
+.sim-controls{background:var(--s1);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;}
+.sim-ctrl-title{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--c127);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;}
+.sim-ctrl-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:12px;}
+.sim-ctrl-item{background:var(--s2);border:1px solid var(--bd2);border-radius:6px;padding:10px 12px;}
+.sim-ctrl-lbl{font-size:11px;color:var(--tx2);font-weight:600;margin-bottom:3px;}
+.sim-ctrl-desc{font-size:10px;color:var(--tx3);margin-bottom:7px;line-height:1.4;}
+.sim-ctrl-val{display:flex;align-items:center;gap:8px;}
+.sim-ctrl-val input[type=range]{flex:1;accent-color:var(--c127);}
+.sim-ctrl-val input[type=text]{background:var(--s3);border:1px solid var(--bd);color:var(--tx);border-radius:4px;padding:4px 7px;font-size:12px;font-family:'Nunito',sans-serif;outline:none;width:100%;}
+.sim-ctrl-val input[type=text]:focus{border-color:var(--c127);}
+.sim-rv{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c127);min-width:36px;text-align:center;}
+.sim-extra-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+.sim-extra-row{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--bd2);border-radius:6px;padding:8px 10px;flex-wrap:wrap;}
+.sim-extra-row input{background:var(--s3);border:1px solid var(--bd);color:var(--tx);border-radius:4px;padding:4px 7px;font-size:11px;font-family:'Nunito',sans-serif;outline:none;}
+.sim-extra-row input:focus{border-color:var(--acc);}
+.sim-extra-badge{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.sim-extra-del{background:transparent;border:1px solid var(--bd);color:var(--tx3);border-radius:4px;padding:2px 7px;cursor:pointer;font-size:10px;}
+.sim-extra-del:hover{border-color:#ef4444;color:#ef4444;}
+.sim-add-btn{padding:6px 14px;background:transparent;border:1px dashed var(--bd);color:var(--tx3);border-radius:5px;cursor:pointer;font-size:11px;font-family:'Nunito',sans-serif;transition:all .15s;}
+.sim-add-btn:hover{border-color:var(--acc);color:var(--acc);}
+/* FINISH CARDS */
+.sim-finish-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.sim-fcard{background:var(--s1);border:1px solid var(--bd);border-top:3px solid transparent;border-radius:8px;padding:14px 16px;}
+.sim-fcard-name{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;margin-bottom:2px;}
+.sim-fcard-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);margin-bottom:12px;}
+.sim-fcard-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;}
+.sim-fcard-finish{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;line-height:1.1;margin-bottom:10px;}
+.sim-fcard-bar{height:4px;background:var(--s3);border-radius:99px;overflow:hidden;margin-bottom:10px;}
+.sim-fcard-barf{height:100%;}
+.sim-fcard-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.sim-fcard-stat{background:var(--s2);border-radius:4px;padding:5px 7px;}
+.sim-fcard-stat-v{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;}
+.sim-fcard-stat-l{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--tx3);margin-top:1px;}
+.sim-hint{color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:10px;padding:20px 0;}
 </style>
 </head>
 <body>
@@ -234,21 +275,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
   <div class="nb">AP127 Dashboard</div>
   <div class="nt active" onclick="showPage('ap127detail',this)">AP127 Detail</div>
   <div class="nt" onclick="showPage('performance',this)">School's Performance</div>
-  <div class="nt" onclick="showPage('capacity',this)">Capacity</div>
-  <div class="navgrp">
-    <div class="nglbl">Overall Situation and Image</div>
-    <div class="nt" onclick="showPage('overview',this)">Overview</div>
-    <div class="nt" onclick="showPage('plans',this)">Flight Plans</div>
-    <div class="nt" onclick="showPage('calendar',this)">Calendar</div>
-    <button id="nav-toggle" onclick="toggleNav()">☰ Batches</button>
-    <div class="bts">
-      <div class="bt active" data-b="ALL" onclick="selBatch('ALL')">ALL</div>
-      <div class="bt" data-b="AP124" onclick="selBatch('AP124')">AP124</div>
-      <div class="bt" data-b="AP126" onclick="selBatch('AP126')">AP126</div>
-      <div class="bt" data-b="AP127" onclick="selBatch('AP127')">AP127</div>
-      <div class="bt" data-b="AP129" onclick="selBatch('AP129')">AP129</div>
-    </div>
-  </div>
+  <div class="nt" onclick="showPage('simulation',this)">Simulation</div>
   <div class="nsep"></div>
   <div class="nright">
     <div style="display:flex;align-items:center;gap:5px;"><div class="sdot" id="sdot"></div><span class="stxt" id="stxt">Cached data</span></div>
@@ -257,6 +284,20 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
     <div class="nt adm" onclick="showPage('admin',this)">⚙ Admin</div>
   </div>
 </nav>
+<div id="sim-subnav">
+  <div class="snt active" id="snt-sim" onclick="showSimSub('simulation',this)">◈ Simulation</div>
+  <div class="snt" id="snt-overview" onclick="showSimSub('overview',this)">Overview</div>
+  <div class="snt" id="snt-plans" onclick="showSimSub('plans',this)">Flight Plans</div>
+  <div class="snt" id="snt-calendar" onclick="showSimSub('calendar',this)">Calendar</div>
+  <div class="nsep"></div>
+  <div class="bts">
+    <div class="bt active" data-b="ALL" onclick="selBatch('ALL')">ALL</div>
+    <div class="bt" data-b="AP124" onclick="selBatch('AP124')">AP124</div>
+    <div class="bt" data-b="AP126" onclick="selBatch('AP126')">AP126</div>
+    <div class="bt" data-b="AP127" onclick="selBatch('AP127')">AP127</div>
+    <div class="bt" data-b="AP129" onclick="selBatch('AP129')">AP129</div>
+  </div>
+</div>
 
 <div id="page-overview" class="page">
   <div class="ss" id="ss"></div>
@@ -341,18 +382,59 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
   </div>
 </div>
 
-<div id="page-capacity" class="page">
-  <div class="d127-wrap">
-    <div class="d127-kpis" style="grid-template-columns:repeat(4,1fr)">
-      <div class="d127-kpi"><div class="d127-kl">Peak Month</div><div class="d127-kv" id="cap-peak-month">-</div><div class="d127-ks" id="cap-peak-sub">avg flights/day</div></div>
-      <div class="d127-kpi"><div class="d127-kl">Current Month</div><div class="d127-kv" id="cap-curr-month">-</div><div class="d127-ks">avg flights/day</div></div>
-      <div class="d127-kpi"><div class="d127-kl">Months at Cap</div><div class="d127-kv" id="cap-at-cap">-</div><div class="d127-ks">≥ daily cap</div></div>
-      <div class="d127-kpi"><div class="d127-kl">Idle Months</div><div class="d127-kv" id="cap-idle">-</div><div class="d127-ks">&lt; 15 avg flights/day</div></div>
+<div id="page-simulation" class="page">
+  <div class="sim-wrap">
+    <!-- Controls -->
+    <div class="sim-controls">
+      <div class="sim-ctrl-title">Scheduler Parameters</div>
+      <div class="sim-ctrl-row">
+        <div class="sim-ctrl-item">
+          <div class="sim-ctrl-lbl">Daily Flight Cap</div>
+          <div class="sim-ctrl-desc">Max total flights per day across all batches</div>
+          <div class="sim-ctrl-val">
+            <input type="range" id="sim-cap" min="5" max="50" value="25" oninput="document.getElementById('sim-cap-v').textContent=this.value">
+            <span class="sim-rv" id="sim-cap-v">25</span>
+            <span style="font-size:10px;color:var(--tx3)">/day</span>
+          </div>
+        </div>
+        <div class="sim-ctrl-item">
+          <div class="sim-ctrl-lbl">AP129 Start Date</div>
+          <div class="sim-ctrl-desc">13 students (fixed) · uses AP127 curriculum</div>
+          <div class="sim-ctrl-val">
+            <input type="text" id="sim-129s" value="2026-06-01" placeholder="YYYY-MM-DD">
+          </div>
+        </div>
+        <div class="sim-ctrl-item">
+          <div class="sim-ctrl-lbl">Planning Horizon</div>
+          <div class="sim-ctrl-desc">Workdays to project forward from 2026-05-05</div>
+          <div class="sim-ctrl-val">
+            <input type="range" id="sim-hor" min="200" max="1200" step="50" value="800" oninput="document.getElementById('sim-hor-v').textContent=this.value">
+            <span class="sim-rv" id="sim-hor-v">800</span>
+            <span style="font-size:10px;color:var(--tx3)">days</span>
+          </div>
+        </div>
+      </div>
+      <div class="sim-ctrl-title" style="margin-top:4px">Additional Batches</div>
+      <div style="font-size:10px;color:var(--tx3);margin-bottom:10px;line-height:1.5">All additional batches use the AP127 curriculum (101 lessons). Priority after AP129.</div>
+      <div id="sim-extra-list" class="sim-extra-list"></div>
+      <button class="sim-add-btn" onclick="addExtraBatch()">+ Add Batch</button>
+      <div style="margin-top:14px;display:flex;gap:8px;align-items:center">
+        <button class="btn-p" style="background:var(--c127);border:none;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;padding:7px 18px;border-radius:5px;color:#000;cursor:pointer" onclick="runSimulation()">▶ Run Simulation</button>
+        <span id="sim-status" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)"></span>
+      </div>
     </div>
+    <!-- Finish date projection -->
+    <div>
+      <div class="sim-ctrl-title" style="margin-bottom:10px">Estimated Finish Dates</div>
+      <div class="sim-finish-grid" id="sim-finish-grid">
+        <div class="sim-hint">Click ▶ Run Simulation to see finish date projections.</div>
+      </div>
+    </div>
+    <!-- Capacity chart -->
     <div class="cb">
       <div class="ch">Monthly Flight Capacity — avg flights/workday per batch</div>
-      <div class="cs">Stacked by batch · dashed line = daily cap · red zone = at/over capacity</div>
-      <div style="position:relative;height:300px"><canvas id="c-capacity"></canvas></div>
+      <div class="cs" id="sim-cap-sub">Stacked by batch · dashed = daily cap · run simulation to update</div>
+      <div style="position:relative;height:310px"><canvas id="c-sim-cap"></canvas></div>
     </div>
   </div>
 </div>
@@ -554,6 +636,10 @@ let G=null,AB="ALL",calY=2026,calM=4;
 const CHARTS={};
 let AP127_VIEW_ROWS=[];
 let tmr=null;
+let EXTRA_BATCHES=[];
+let SIM_G=null;
+const EXTRA_COLORS=['#a78bfa','#f472b6','#34d399','#60a5fa','#fbbf24','#f87171'];
+function escHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 
 // ── STORAGE ──
 function saveLocal(){try{localStorage.setItem("catc_cfg",JSON.stringify({relayUrl:CFG.relayUrl,cap:CFG.cap,n129:CFG.n129,ap129start:CFG.ap129start,horizon:CFG.horizon,recents:CFG.recents,upcomings:CFG.upcomings,cardH:CFG.cardH,chartH:CFG.chartH}));}catch(e){}}
@@ -628,7 +714,7 @@ function parseCSV(text,batch){
 function isWD(ds){const d=new Date(ds+"T12:00:00Z"),dw=d.getUTCDay();return dw!==0&&dw!==6&&!HOL.has(ds);}
 function getWDs(s,n){const a=[];let d=new Date(s+"T12:00:00Z");while(a.length<n){const ds=d.toISOString().slice(0,10);if(isWD(ds))a.push(ds);d.setUTCDate(d.getUTCDate()+1);}return a;}
 
-function runScheduler(batchData,curricula){
+function runScheduler(batchData,curricula,extraBatches=[]){
   const{cap,n129,ap129start,horizon}=CFG;
   const wds=getWDs("2026-05-05",horizon);
   const w129=wds.findIndex(d=>d>=ap129start);
@@ -640,8 +726,13 @@ function runScheduler(batchData,curricula){
   });
   iM.AP129={};lwM.AP129={};lmM.AP129={};schM.AP129={};
   for(let i=0;i<n129;i++){iM.AP129[i]=0;lwM.AP129[i]=-99;lmM.AP129[i]=0;schM.AP129[i]=[];}
-  function elig(b,cur,wi){
-    const tot=cur.length,wl=Math.max(horizon-wi,1),n=b==="AP129"?n129:(batchData[b]||[]).length,out=[];
+  extraBatches.forEach(b=>{
+    const k=b.name;iM[k]={};lwM[k]={};lmM[k]={};schM[k]={};
+    for(let i=0;i<(b.n||0);i++){iM[k][i]=0;lwM[k][i]=-99;lmM[k][i]=0;schM[k][i]=[];}
+  });
+  const wExtra=extraBatches.map(b=>wds.findIndex(d=>d>=(b.start||"9999")));
+  function elig(b,cur,wi,overN){
+    const tot=cur.length,wl=Math.max(horizon-wi,1),n=overN!==undefined?overN:(b==="AP129"?n129:(batchData[b]||[]).length),out=[];
     for(let i=0;i<n;i++){if(iM[b][i]>=tot)continue;const gap=lmM[b][i]>=120?2:1;if((wi-lwM[b][i])<gap)continue;out.push([(tot-iM[b][i])/wl,i]);}
     return out.sort((a,z)=>z[0]-a[0]);
   }
@@ -652,18 +743,31 @@ function runScheduler(batchData,curricula){
       for(const[,i]of elig(b,cur,wi)){if(slots<=0)break;const ix=iM[b][i];if(ix>=cur.length)continue;const p=cur[ix];schM[b][i].push([ds,p.lesson,p.planned_mins]);lwM[b][i]=wi;lmM[b][i]=p.planned_mins;iM[b][i]=ix+1;slots--;}
     });
     if(slots>0&&wi>=w129)for(const[,i]of elig("AP129",cur129,wi)){if(slots<=0)break;const ix=iM.AP129[i];if(ix>=cur129.length)continue;const p=cur129[ix];schM.AP129[i].push([ds,p.lesson,p.planned_mins]);lwM.AP129[i]=wi;lmM.AP129[i]=p.planned_mins;iM.AP129[i]=ix+1;slots--;}
+    extraBatches.forEach((b,bi)=>{
+      if(slots<=0||wi<wExtra[bi])return;
+      const k=b.name;
+      for(const[,i]of elig(k,cur129,wi,b.n)){if(slots<=0)break;const ix=iM[k][i];if(ix>=cur129.length)continue;const p=cur129[ix];schM[k][i].push([ds,p.lesson,p.planned_mins]);lwM[k][i]=wi;lmM[k][i]=p.planned_mins;iM[k][i]=ix+1;slots--;}
+    });
   });
   const dc={},wpm={};wds.forEach(d=>{const m=d.slice(0,7);wpm[m]=(wpm[m]||0)+1;});
   ["AP124","AP126","AP127","AP129"].forEach(b=>{
     const n=b==="AP129"?n129:(batchData[b]||[]).length;
     for(let i=0;i<n;i++)for(const[ds]of schM[b][i]||[]){const m=ds.slice(0,7);if(!dc[m])dc[m]={t:0,"124":0,"126":0,"127":0,"129":0};dc[m].t++;dc[m][b.replace("AP","")]++;}
   });
-  const monthly={};Object.entries(dc).forEach(([m,v])=>{const w=wpm[m]||1;monthly[m]={t:+(v.t/w).toFixed(1),"124":+(v["124"]/w).toFixed(1),"126":+(v["126"]/w).toFixed(1),"127":+(v["127"]/w).toFixed(1),"129":+(v["129"]/w).toFixed(1)};});
+  extraBatches.forEach(b=>{
+    for(let i=0;i<(b.n||0);i++)for(const[ds]of schM[b.name][i]||[]){const m=ds.slice(0,7);if(!dc[m])dc[m]={t:0,"124":0,"126":0,"127":0,"129":0};dc[m].t++;dc[m][b.name]=(dc[m][b.name]||0)+1;}
+  });
+  const monthly={};Object.entries(dc).forEach(([m,v])=>{const w=wpm[m]||1;const mo={t:+(v.t/w).toFixed(1),"124":+(v["124"]/w).toFixed(1),"126":+(v["126"]/w).toFixed(1),"127":+(v["127"]/w).toFixed(1),"129":+(v["129"]/w).toFixed(1)};extraBatches.forEach(b=>{mo[b.name]=+((v[b.name]||0)/w).toFixed(1);});monthly[m]=mo;});
   function mkSt(b,st,cur,sd){
     if(b==="AP129")return Array.from({length:n129},(_,i)=>({catc_id:"AP129-"+String(i+1).padStart(2,"0"),name:"Student "+String(i+1).padStart(2,"0"),batch:"AP129",done:0,total:cur.length,remaining:cur.length,pct:0,flown:[],next_lesson:cur[0]?.lesson||"",planned:(sd[i]||[]).map(p=>Array.isArray(p)?{date:p[0],lesson:p[1],mins:p[2]}:p),planned_total:(sd[i]||[]).length,finish:(sd[i]||[]).at(-1)?.[0]||(sd[i]||[]).at(-1)?.date||"N/A"}));
     return(st||[]).map((s,i)=>{const pl=sd[i]||[];const pl2=pl.map(p=>Array.isArray(p)?{date:p[0],lesson:p[1],mins:p[2]}:p);return{...s,planned:pl2,planned_total:pl2.length,finish:pl2.at(-1)?.date||pl.at(-1)?.[0]||(s.remaining===0?"COMPLETE":"N/A")};});
   }
-  return{ap124:mkSt("AP124",batchData.AP124,curricula.AP124||[],schM.AP124),ap126:mkSt("AP126",batchData.AP126,curricula.AP126||[],schM.AP126),ap127:mkSt("AP127",batchData.AP127,curricula.AP127||[],schM.AP127),ap129:mkSt("AP129",[],cur129,schM.AP129),monthly,cap,cur124:curricula.AP124,cur126:curricula.AP126,cur127:curricula.AP127};
+  const result={ap124:mkSt("AP124",batchData.AP124,curricula.AP124||[],schM.AP124),ap126:mkSt("AP126",batchData.AP126,curricula.AP126||[],schM.AP126),ap127:mkSt("AP127",batchData.AP127,curricula.AP127||[],schM.AP127),ap129:mkSt("AP129",[],cur129,schM.AP129),monthly,cap,cur124:curricula.AP124,cur126:curricula.AP126,cur127:curricula.AP127};
+  extraBatches.forEach(b=>{
+    result["extra_"+b.name]=Array.from({length:b.n||0},(_,i)=>({catc_id:b.name+"-"+String(i+1).padStart(2,"0"),name:"Student "+String(i+1).padStart(2,"0"),batch:b.name,done:0,total:cur129.length,remaining:cur129.length,pct:0,flown:[],next_lesson:cur129[0]?.lesson||"",planned:(schM[b.name][i]||[]).map(p=>Array.isArray(p)?{date:p[0],lesson:p[1],mins:p[2]}:p),planned_total:(schM[b.name][i]||[]).length,finish:(schM[b.name][i]||[]).at(-1)?.[0]||"N/A"}));
+  });
+  result.extra_batches=extraBatches;
+  return result;
 }
 
 // ── FETCH VIA RELAY ──
@@ -816,6 +920,120 @@ function buildCapacity(){
   }}}}});
 }
 function renderCapacity(){if(!G)return;buildCapacity();}
+
+// ── SIMULATION ──
+function addExtraBatch(){
+  const colorIdx=EXTRA_BATCHES.length%EXTRA_COLORS.length;
+  EXTRA_BATCHES.push({id:Date.now(),name:"APXXX",n:10,start:"2026-07-01",color:EXTRA_COLORS[colorIdx]});
+  renderSimExtraList();
+}
+function removeExtraBatch(id){EXTRA_BATCHES=EXTRA_BATCHES.filter(b=>b.id!==id);renderSimExtraList();}
+function updateExtraBatch(id,key,val){const b=EXTRA_BATCHES.find(x=>x.id===id);if(b)b[key]=key==="n"?Math.max(1,+val||1):val;}
+function renderSimExtraList(){
+  const el=document.getElementById("sim-extra-list");if(!el)return;
+  if(!EXTRA_BATCHES.length){el.innerHTML="";return;}
+  el.innerHTML=EXTRA_BATCHES.map(b=>`<div class="sim-extra-row">
+    <div class="sim-extra-badge" style="background:${b.color}"></div>
+    <input style="width:90px" placeholder="Name" value="${escHtml(b.name)}" oninput="updateExtraBatch(${b.id},'name',this.value)">
+    <input type="number" style="width:64px" min="1" max="60" placeholder="N students" value="${b.n}" oninput="updateExtraBatch(${b.id},'n',+this.value)">
+    <input style="width:116px" placeholder="YYYY-MM-DD" value="${escHtml(b.start)}" oninput="updateExtraBatch(${b.id},'start',this.value)">
+    <span style="font-size:9px;color:var(--tx3);flex:1">101 lessons</span>
+    <button class="sim-extra-del" onclick="removeExtraBatch(${b.id})">✕</button>
+  </div>`).join("");
+}
+function runSimulation(){
+  if(!G){toast("No data — load cache first","wa");return;}
+  const capEl=document.getElementById("sim-cap"),horEl=document.getElementById("sim-hor"),s129El=document.getElementById("sim-129s");
+  CFG.cap=+(capEl?.value)||25;
+  CFG.horizon=+(horEl?.value)||800;
+  CFG.ap129start=s129El?.value||"2026-06-01";
+  const bd={AP124:G.ap124||[],AP126:G.ap126||[],AP127:G.ap127||[]};
+  const cur={AP124:G.cur124||[],AP126:G.cur126||[],AP127:G.cur127||[]};
+  const t0=Date.now();
+  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES);
+  SIM_G.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
+  const ms=Date.now()-t0;
+  const statusEl=document.getElementById("sim-status");
+  if(statusEl)statusEl.textContent=`Done in ${ms}ms · cap ${CFG.cap}/day · ${CFG.horizon}wd horizon`;
+  renderSimFinish();
+  buildSimCapacityChart();
+  toast("Simulation complete","ok");
+}
+function renderSimulation(){
+  if(!G)return;
+  const capEl=document.getElementById("sim-cap"),horEl=document.getElementById("sim-hor"),s129El=document.getElementById("sim-129s");
+  if(capEl){capEl.value=CFG.cap;document.getElementById("sim-cap-v").textContent=CFG.cap;}
+  if(horEl){horEl.value=CFG.horizon;document.getElementById("sim-hor-v").textContent=CFG.horizon;}
+  if(s129El)s129El.value=CFG.ap129start;
+  renderSimExtraList();
+  if(!SIM_G)runSimulation();
+}
+function renderSimFinish(){
+  if(!SIM_G)return;
+  const grid=document.getElementById("sim-finish-grid");if(!grid)return;
+  function fcard(name,col,students,startDate){
+    const fins=students.map(s=>s.finish).filter(f=>f&&f!=="COMPLETE"&&f!=="N/A").sort();
+    const last=fins.at(-1)||null,first=fins[0]||null;
+    const done=students.reduce((a,s)=>a+(s.done||0),0);
+    const tot=students.reduce((a,s)=>a+(s.total||0),0);
+    const pct=tot?done/tot*100:0;
+    const n=students.length;
+    const sub=startDate?`${n} students · starts ${escHtml(startDate)}`:`${n} students · active`;
+    return `<div class="sim-fcard" style="border-top-color:${col}">
+      <div class="sim-fcard-name" style="color:${col}">${escHtml(name)}</div>
+      <div class="sim-fcard-sub">${sub}</div>
+      <div class="sim-fcard-lbl">PROJECTED LAST FINISH</div>
+      <div class="sim-fcard-finish" style="color:${col}">${last?fm(last):"—"}</div>
+      <div class="sim-fcard-bar"><div class="sim-fcard-barf" style="width:${pct.toFixed(1)}%;background:${col}"></div></div>
+      <div class="sim-fcard-stats">
+        <div class="sim-fcard-stat"><div class="sim-fcard-stat-v" style="color:${col}">${pct.toFixed(0)}%</div><div class="sim-fcard-stat-l">Done</div></div>
+        <div class="sim-fcard-stat"><div class="sim-fcard-stat-v">${first?fm(first):"—"}</div><div class="sim-fcard-stat-l">First finishes</div></div>
+      </div>
+    </div>`;
+  }
+  let html=fcard("AP124",BC.AP124,SIM_G.ap124||[],null);
+  html+=fcard("AP126",BC.AP126,SIM_G.ap126||[],null);
+  html+=fcard("AP127",BC.AP127,SIM_G.ap127||[],null);
+  html+=fcard("AP129",BC.AP129,SIM_G.ap129||[],CFG.ap129start);
+  (SIM_G.extra_batches||[]).forEach(b=>{html+=fcard(b.name,b.color,SIM_G["extra_"+b.name]||[],b.start);});
+  grid.innerHTML=html;
+}
+function buildSimCapacityChart(){
+  if(!SIM_G)return;
+  const monthly=SIM_G.monthly||{};
+  const M=Object.keys(monthly).sort();if(!M.length)return;
+  const cap=CFG.cap;
+  const lbl=M.map(m=>{const[y,mo]=m.split("-");return["","J","F","M","A","M","J","J","A","S","O","N","D"][+mo]+"'"+y.slice(2);});
+  const v=k=>M.map(m=>(monthly[m]||{})[k]||0);
+  const extras=SIM_G.extra_batches||[];
+  const totals=M.map(m=>(monthly[m]||{}).t||0);
+  const datasets=[
+    {label:"AP124",data:v("124"),backgroundColor:"rgba(192,132,252,.75)",stack:"s"},
+    {label:"AP126",data:v("126"),backgroundColor:"rgba(56,189,248,.75)",stack:"s"},
+    {label:"AP127",data:v("127"),backgroundColor:"rgba(251,146,60,.75)",stack:"s"},
+    {label:"AP129",data:v("129"),backgroundColor:"rgba(74,222,128,.75)",stack:"s"},
+    ...extras.map(b=>({label:b.name,data:v(b.name),backgroundColor:b.color+"bb",stack:"s"})),
+    {label:"Cap",data:Array(lbl.length).fill(cap),type:"line",borderColor:"#f59e0b",borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false}
+  ];
+  const subEl=document.getElementById("sim-cap-sub");
+  if(subEl)subEl.textContent=`Stacked by batch · dashed = ${cap}/day cap · ${extras.length?extras.map(b=>b.name).join(", ")+" included":""}`;
+  CHARTS.simCap=mkC("c-sim-cap",{type:"bar",data:{labels:lbl,datasets},options:{...copts(
+    {stacked:true,grid:{color:"#21262d"}},
+    {stacked:true,max:Math.max(cap+5,Math.max(...totals,0)+3),grid:{color:"#21262d"}}
+  ),plugins:{...copts().plugins,tooltip:{callbacks:{
+    title:([ctx])=>M[ctx.dataIndex]||ctx.label,
+    afterBody:([ctx])=>`Total: ${(totals[ctx.dataIndex]||0).toFixed(1)} / Cap: ${cap}`
+  }}}}});
+}
+function showSimSub(name,el){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".snt").forEach(t=>t.classList.remove("active"));
+  document.getElementById("page-"+name).classList.add("active");
+  el.classList.add("active");
+  if(name==="plans")renderPlans();
+  if(name==="calendar")renderCal();
+  if(name==="simulation")renderSimulation();
+}
 
 // ── TIMELINE ──
 function renderTimeline(){
@@ -1340,24 +1558,49 @@ function calPrev(){calM--;if(calM<0){calM=11;calY--;}renderCal();}
 function calNext(){calM++;if(calM>11){calM=0;calY++;}renderCal();}
 
 // ── NAV ──
-function toggleNav(){const bts=document.querySelector(".navgrp .bts");if(bts)bts.classList.toggle("open");}
-function selBatch(b){AB=b;document.querySelectorAll(".bt").forEach(t=>t.classList.remove("active"));document.querySelector(`.bt[data-b="${b}"]`).classList.add("active");if(window.innerWidth<=900){const bts=document.querySelector(".navgrp .bts");if(bts)bts.classList.remove("open");}const pg=document.querySelector(".page.active")?.id?.replace("page-","");if(pg==="plans")renderPlans();if(pg==="calendar")renderCal();}
+function selBatch(b){
+  AB=b;
+  document.querySelectorAll(".bt").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(`.bt[data-b="${b}"]`).forEach(t=>t.classList.add("active"));
+  const pg=document.querySelector(".page.active")?.id?.replace("page-","");
+  if(pg==="plans")renderPlans();
+  if(pg==="calendar")renderCal();
+}
 async function showPage(name,el){
   if(name==="admin"&&!await requestAdminUnlock())return;
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.querySelectorAll(".nt").forEach(t=>t.classList.remove("active"));
-  document.getElementById("page-"+name).classList.add("active");
+  const simSubnav=document.getElementById("sim-subnav");
+  if(name==="simulation"){
+    document.getElementById("page-simulation").classList.add("active");
+    if(simSubnav)simSubnav.classList.add("show");
+    document.querySelectorAll(".snt").forEach(t=>t.classList.remove("active"));
+    const sntSim=document.getElementById("snt-sim");if(sntSim)sntSim.classList.add("active");
+    renderSimulation();
+  } else {
+    if(simSubnav)simSubnav.classList.remove("show");
+    document.getElementById("page-"+name).classList.add("active");
+    if(name==="plans")renderPlans();
+    if(name==="calendar")renderCal();
+    if(name==="performance")renderPerformance();
+    if(name==="ap127detail")renderAP127Detail();
+    if(name==="admin"){const el2=document.getElementById("relay-url");if(el2&&CFG.relayUrl)el2.value=CFG.relayUrl;document.getElementById("script-code").textContent=APPS_SCRIPT_CODE;}
+  }
   el.classList.add("active");
-  if(name==="plans")renderPlans();
-  if(name==="calendar")renderCal();
-  if(name==="performance")renderPerformance();
-  if(name==="capacity")renderCapacity();
-  if(name==="ap127detail")renderAP127Detail();
-  if(name==="admin"){const el2=document.getElementById("relay-url");if(el2&&CFG.relayUrl)el2.value=CFG.relayUrl;document.getElementById("script-code").textContent=APPS_SCRIPT_CODE;}
 }
 
 // ── RENDER ALL ──
-function renderAll(){renderStats();buildLoad();buildProg();buildBC("c-124","inf-124","ap124",BC.AP124);buildBC("c-126","inf-126","ap126",BC.AP126);buildBC("c-127","inf-127","ap127",BC.AP127);renderTimeline();const pg=document.querySelector(".page.active")?.id?.replace("page-","");if(pg==="plans")renderPlans();if(pg==="calendar")renderCal();if(pg==="performance")renderPerformance();if(pg==="capacity")renderCapacity();if(pg==="ap127detail")renderAP127Detail();}
+function renderAll(){
+  renderStats();buildLoad();buildProg();
+  buildBC("c-124","inf-124","ap124",BC.AP124);buildBC("c-126","inf-126","ap126",BC.AP126);buildBC("c-127","inf-127","ap127",BC.AP127);
+  renderTimeline();
+  const pg=document.querySelector(".page.active")?.id?.replace("page-","");
+  if(pg==="plans")renderPlans();
+  if(pg==="calendar")renderCal();
+  if(pg==="performance")renderPerformance();
+  if(pg==="simulation"){SIM_G=null;renderSimulation();}
+  if(pg==="ap127detail")renderAP127Detail();
+}
 
 // ── INIT ──
 (async function(){
