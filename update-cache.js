@@ -70,7 +70,8 @@ function getWDs(s, n) {
 }
 function runScheduler(batchData, curricula) {
   const {cap, n129, ap129start, horizon} = CFG;
-  const wds = getWDs("2026-05-05", horizon);
+  const todayBKK = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+  const wds = getWDs(todayBKK, horizon);
   const w129 = wds.findIndex(d => d >= ap129start);
   const cur129 = curricula.AP127 || curricula.AP126 || [];
   const iM = {}, lwM = {}, lmM = {}, schM = {};

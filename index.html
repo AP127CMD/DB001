@@ -268,6 +268,12 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .sim-fcard-stat-v{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;}
 .sim-fcard-stat-l{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--tx3);margin-top:1px;}
 .sim-hint{color:var(--tx3);font-family:'JetBrains Mono',monospace;font-size:10px;padding:20px 0;}
+/* SIM INFO PANEL */
+.sim-info-panel{background:var(--s1);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;}
+.sim-info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:10px;}
+.sim-info-item{background:var(--s2);border-radius:5px;padding:9px 11px;}
+.sim-info-lbl{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+.sim-info-val{font-family:'Nunito',sans-serif;font-size:11px;color:var(--tx2);line-height:1.5;}
 </style>
 </head>
 <body>
@@ -406,7 +412,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
         </div>
         <div class="sim-ctrl-item">
           <div class="sim-ctrl-lbl">Planning Horizon</div>
-          <div class="sim-ctrl-desc">Workdays to project forward from 2026-05-05</div>
+          <div class="sim-ctrl-desc">Workdays to project forward from today</div>
           <div class="sim-ctrl-val">
             <input type="range" id="sim-hor" min="200" max="1200" step="50" value="800" oninput="document.getElementById('sim-hor-v').textContent=this.value">
             <span class="sim-rv" id="sim-hor-v">800</span>
@@ -421,6 +427,48 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
       <div style="margin-top:14px;display:flex;gap:8px;align-items:center">
         <button class="btn-p" style="background:var(--c127);border:none;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;padding:7px 18px;border-radius:5px;color:#000;cursor:pointer" onclick="runSimulation()">▶ Run Simulation</button>
         <span id="sim-status" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)"></span>
+      </div>
+    </div>
+    <!-- How simulation works -->
+    <div class="sim-info-panel">
+      <div class="sim-ctrl-title">How the Simulation Works</div>
+      <div class="sim-info-grid">
+        <div class="sim-info-item">
+          <div class="sim-info-lbl">Schedule start</div>
+          <div class="sim-info-val">Today (Bangkok time) — only future workdays are scheduled</div>
+        </div>
+        <div class="sim-info-item">
+          <div class="sim-info-lbl">Priority order</div>
+          <div class="sim-info-val"><span style="color:var(--c124)">AP124</span> → <span style="color:var(--c126)">AP126</span> → <span style="color:var(--c127)">AP127</span> → <span style="color:var(--c129)">AP129</span> → Extra batches (in added order)</div>
+        </div>
+        <div class="sim-info-item">
+          <div class="sim-info-lbl">Daily cap</div>
+          <div class="sim-info-val">Max N flights/day shared across all batches combined — higher-priority batches fill slots first</div>
+        </div>
+        <div class="sim-info-item">
+          <div class="sim-info-lbl">Student eligibility</div>
+          <div class="sim-info-val">Must wait <b>1 workday</b> after a lesson &lt; 120 min · <b>2 workdays</b> after a lesson ≥ 120 min (2 hr+). Within a batch, the student furthest behind their plan fills next.</div>
+        </div>
+        <div class="sim-info-item">
+          <div class="sim-info-lbl">Workdays</div>
+          <div class="sim-info-val">Monday–Friday only · 14 Thai public holidays in 2026 excluded</div>
+        </div>
+        <div class="sim-info-item">
+          <div class="sim-info-lbl">Curriculum</div>
+          <div class="sim-info-val"><span style="color:var(--c124)">AP124</span>: 97 lessons · <span style="color:var(--c126)">AP126</span> / <span style="color:var(--c127)">AP127</span> / <span style="color:var(--c129)">AP129</span> / Extra: 101 lessons (AP127 curriculum)</div>
+        </div>
+        <div class="sim-info-item">
+          <div class="sim-info-lbl">ETC basis</div>
+          <div class="sim-info-val">Projected finish = date of the last student's last planned lesson. "Months to go" counts from today to that date.</div>
+        </div>
+        <div class="sim-info-item">
+          <div class="sim-info-lbl">AP124 / AP126 / AP127</div>
+          <div class="sim-info-val">Actual flights already completed are locked in; only remaining lessons are scheduled forward from today</div>
+        </div>
+        <div class="sim-info-item">
+          <div class="sim-info-lbl">AP129 &amp; Extra batches</div>
+          <div class="sim-info-val">Start from zero — all 101 lessons scheduled from the batch start date onward</div>
+        </div>
       </div>
     </div>
     <!-- Finish date projection -->
@@ -730,9 +778,9 @@ function parseCSV(text,batch){
 function isWD(ds){const d=new Date(ds+"T12:00:00Z"),dw=d.getUTCDay();return dw!==0&&dw!==6&&!HOL.has(ds);}
 function getWDs(s,n){const a=[];let d=new Date(s+"T12:00:00Z");while(a.length<n){const ds=d.toISOString().slice(0,10);if(isWD(ds))a.push(ds);d.setUTCDate(d.getUTCDate()+1);}return a;}
 
-function runScheduler(batchData,curricula,extraBatches=[]){
+function runScheduler(batchData,curricula,extraBatches=[],startDate=""){
   const{cap,n129,ap129start,horizon}=CFG;
-  const wds=getWDs("2026-05-05",horizon);
+  const wds=getWDs(startDate||"2026-05-05",horizon);
   const w129=wds.findIndex(d=>d>=ap129start);
   const cur129=curricula.AP127||curricula.AP126||[];
   const iM={},lwM={},lmM={},schM={};
@@ -967,7 +1015,8 @@ function runSimulation(){
   const bd={AP124:G.ap124||[],AP126:G.ap126||[],AP127:G.ap127||[]};
   const cur={AP124:G.cur124||[],AP126:G.cur126||[],AP127:G.cur127||[]};
   const t0=Date.now();
-  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES);
+  const todayBKK=new Date(Date.now()+7*3600000).toISOString().slice(0,10);
+  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,todayBKK);
   SIM_G.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
   const ms=Date.now()-t0;
   const statusEl=document.getElementById("sim-status");
@@ -1084,8 +1133,10 @@ function makeCard(s,rankClass=""){
   const sep=(s.flown?.length&&s.planned?.length)?`<div class="lsep">▸ ${s.remaining} remaining · next ${Math.min(CFG.upcomings,s.remaining)} shown</div>`:"";
   const more=(s.planned_total||0)>CFG.upcomings?`<div class="moret">+${s.planned_total-CFG.upcomings} more</div>`:"";
   const fin=s.finish==="COMPLETE"?"COMPLETED":fd(s.finish);
+  const nextDate=(s.planned||[])[0]?.date;
   const ntag=CFG.showNextTag&&s.next_lesson?`<b style="color:${col}">${s.next_lesson}</b>`:"";
-  return`<div class="scard${rankClass?" status-"+rankClass:""}"><div class="sh"><div><div class="sname">${s.name}${nick}</div><div class="smeta">${s.batch} · ${s.done}/${s.total}</div></div><div><div class="spct" style="color:${col}">${s.pct.toFixed(1)}%</div><div class="spct2">${s.remaining} left</div></div></div><div class="pb"><div class="pf" style="width:${Math.max(s.pct,.3)}%;background:${col}"></div></div><div class="sb2" style="max-height:${CFG.cardH}px">${fRows}${sep}${pRows}${more}</div><div class="sf2"><span style="font-size:10px;color:var(--tx3)">Next:${ntag?` ${ntag}`:""}</span><span class="ftag" style="background:${bg};color:${col};border:1px solid ${col}33">${fin}</span></div></div>`;
+  const ndateTag=nextDate?`<span style="color:var(--tx2);margin-left:3px">${fd(nextDate)}</span>`:"";
+  return`<div class="scard${rankClass?" status-"+rankClass:""}"><div class="sh"><div><div class="sname">${s.name}${nick}</div><div class="smeta">${s.batch} · ${s.done}/${s.total}</div></div><div><div class="spct" style="color:${col}">${s.pct.toFixed(1)}%</div><div class="spct2">${s.remaining} left</div></div></div><div class="pb"><div class="pf" style="width:${Math.max(s.pct,.3)}%;background:${col}"></div></div><div class="sb2" style="max-height:${CFG.cardH}px">${fRows}${sep}${pRows}${more}</div><div class="sf2"><span style="font-size:10px;color:var(--tx3)">Next:${ntag?` ${ntag}${ndateTag}`:""}</span><span class="ftag" style="background:${bg};color:${col};border:1px solid ${col}33">Finish: ${fin}</span></div></div>`;
 }
 function renderPlans(){
   const q=document.getElementById("si").value.toLowerCase();const srt=document.getElementById("ss-sel").value;
