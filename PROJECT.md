@@ -1,6 +1,6 @@
 # AP127 Dashboard — Project Reference
 
-> **Last updated:** 2026-05-11  
+> **Last updated:** 2026-05-20  
 > **Repo:** https://github.com/nuguitar/AP127_NGT_001  
 > **Live site:** deployed via GitHub Pages (URL injected from `RELAY_URL` secret at build time)
 
@@ -31,8 +31,8 @@ Google Sheets (CSV source)
 
 | File | Role | Size |
 |---|---|---|
-| `index.html` | Entire front-end: CSS + HTML + JS in one file | ~1 316 lines |
-| `update-cache.js` | Node.js script: fetches CSVs, runs scheduler, writes `cache.json` | ~147 lines |
+| `index.html` | Entire front-end: CSS + HTML + JS in one file | ~1 650 lines |
+| `update-cache.js` | Node.js script: fetches CSVs, runs scheduler, writes `cache.json` | ~160 lines |
 | `cache.json` | Pre-computed data cache served to the browser | ~500 KB |
 | `.github/workflows/update-cache.yml` | Scheduled job: refresh data + deploy Pages every 5 min |
 | `.github/workflows/static.yml` | Deploy-only job: triggered on every push to `main` |
@@ -142,13 +142,24 @@ AP127_NICKS = ["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN",
 
 ## 6. Scheduler (`runScheduler` in both files)
 
-- Generates planned lesson dates for all four batches.
-- **Daily cap:** 25 flights/day across all batches combined.
-- **Priority order:** AP124 → AP126 → AP127 → AP129.
-- **Eligibility gap:** Students who flew a lesson ≥ 120 min must wait 2 workdays; others wait 1.
-- **AP129** starts on `CFG.ap129start` (default `2026-06-01`); uses AP127 curriculum.
-- **Planning horizon:** 800 workdays from `2026-05-05`.
+**Signature:** `runScheduler(batchData, curricula, extraBatches=[], startDate="", hourMode=false)`
+
+- Generates planned lesson dates for all batches (AP124, AP126, AP127, AP129, extra batches).
+- **Schedule start:** Tomorrow (Bangkok time, UTC+7). All planned lessons are strictly future. `update-cache.js` and the Simulation both compute tomorrow's Bangkok date at runtime.
+- **Daily cap:** Configurable. In **flights mode** (default): max N flights/day. In **hours mode**: max N flight-hours/day; each lesson costs `planned_mins / 60` hours and shorter lessons can fill remaining capacity after larger ones are skipped.
+- **Priority order:** AP124 → AP126 → AP127 → AP129 → Extra batches (in added order).
+- **Eligibility gap:** Students who flew a lesson ≥ 120 min must wait 2 workdays; others wait 1. Initialized via `computeLwM(lastFlightDate, wds[0])` which counts actual workdays between the last real flight and the first scheduled workday — so the gap is correctly enforced from the true last flight, not reset arbitrarily.
+- **AP129** starts on `CFG.ap129start` (default `2026-06-01`); uses AP127 curriculum. Fixed at 13 students.
+- **Extra batches** — user-defined in Simulation page: each has a name, student count, and start date; all use AP127 curriculum (101 lessons).
+- **Planning horizon:** 800 workdays from tomorrow (configurable in Simulation).
 - **Holidays 2026** (14 Thai public holidays) defined in `HOL` Set.
+
+`computeLwM(ld, firstWd)` helper (inside `runScheduler`):
+```js
+// Returns negative virtual workday index for last-flight date ld relative to wds[0]
+// Counts workdays strictly after ld up to and including firstWd
+// Result: -N means student last flew N workdays before the schedule starts
+```
 
 ---
 
@@ -167,7 +178,7 @@ Simulation sub-nav (visible only when Simulation is active):
 
 | Sub-nav label | Page ID | Notes |
 |---|---|---|
-| ◈ Simulation | `page-simulation` | Finish cards + capacity chart + controls |
+| ◈ Simulation | `page-simulation` | Scheduler params · info panel · finish cards · capacity chart |
 | Overview | `page-overview` | `renderStats()` + charts |
 | Flight Plans | `page-plans` | Batch filter applies |
 | Calendar | `page-calendar` | Batch filter applies |
@@ -183,19 +194,32 @@ Simulation sub-nav (visible only when Simulation is active):
 | `syncAll()` | Fetches live CSVs from relay for AP124/AP126/AP127, runs scheduler, re-renders |
 | `fetchBatch(batch)` | Single-batch fetch + `parseCSV` via Apps Script relay |
 | `parseCSV(text, batch)` | Parses 3-row-per-student CSV format into `{students, curriculum}` |
-| `runScheduler(batchData, curricula)` | Generates planned schedules; returns full cache structure |
+| `runScheduler(batchData, curricula, extraBatches, startDate, hourMode)` | Generates planned schedules; returns full cache structure |
 
 ### Rendering
 
 | Function | Description |
 |---|---|
 | `renderAll()` | Calls all render/chart functions; used after sync or param change |
-| `makeCard(s, rankClass="")` | Builds a `.scard` HTML string for Flight Plans view |
+| `makeCard(s, rankClass="")` | Builds a `.scard` HTML string for Flight Plans view. Footer shows next lesson code + date, finish tag labelled "Finish: [date]" |
 | `renderPlans()` | Renders the Flight Plans card grid with per-batch rank colouring |
 | `renderAP127Detail()` | Renders KPIs, ranking table, pace bands, activity feed, charts |
-| `renderCapacity()` | Renders the Capacity page (KPIs + chart) |
 | `renderPerformance()` | Renders School's Performance page (stats + two charts) |
 | `renderCal()` | Renders the calendar grid for the current month |
+| `renderSimulation()` | Renders Simulation page controls and info panel; auto-runs if `SIM_G` already set |
+| `renderSimFinish()` | Renders finish-date projection cards from `SIM_G` |
+| `renderSimExtraList()` | Renders editable extra-batch rows in the controls section |
+
+### Simulation
+
+| Function | Description |
+|---|---|
+| `runSimulation()` | Reads controls, calls `runScheduler` with tomorrow's Bangkok date + `CFG.hourMode`, stores result in `SIM_G`, re-renders finish cards and capacity chart |
+| `buildSimCapacityChart()` | Builds stacked bar chart on `c-sim-cap`; switches labels/axis/tooltip between flights and hours mode based on `SIM_G.hourMode` |
+| `toggleHourMode(isHour)` | Switches `CFG.hourMode`, updates cap label/desc/unit, resets slider range & default value |
+| `addExtraBatch()` | Appends a new entry to `EXTRA_BATCHES[]` with auto-assigned color |
+| `removeExtraBatch(id)` | Removes entry by id from `EXTRA_BATCHES[]` |
+| `updateExtraBatch(id, key, val)` | Updates a field (name/n/start/color) on an `EXTRA_BATCHES` entry |
 
 ### AP127-specific helpers
 
@@ -215,7 +239,7 @@ Simulation sub-nav (visible only when Simulation is active):
 | `c-load` | `buildLoad()` | Overview |
 | `c-prog` | `buildProg()` | Overview |
 | `c-124` / `c-126` / `c-127` | `buildBC(...)` | Overview |
-| `c-capacity` | `buildCapacity()` | Capacity *(new)* |
+| `c-sim-cap` | `buildSimCapacityChart()` | Simulation — stacked by batch, flights or hours mode |
 | `c-perf-daily` / `c-perf-monthly` | `renderPerformance()` | School's Performance |
 | `d127-timeline` | `buildAP127Timeline()` | AP127 Detail |
 | `d127-race` | `buildAP127RaceChart()` | AP127 Detail (actual vs planned burndown) |
@@ -330,8 +354,11 @@ Push to main
 
 | Date | Commit | Description |
 |---|---|---|
-| 2026-05-20 | (pending) | **feat:** SIMULATION overhaul — renamed Capacity→Simulation, sub-nav (Simulation/Overview/Flight Plans/Calendar), finish-date projection cards per batch, extra batch support (name/n/start), extended scheduler for extra batches, capacity chart in simulation page |
-| 2026-05-19 | (pending) | **feat:** student ranking table redesign (call sign column, IDLE days, DAY delta with color coding) · Hrs Delta column · hours calculated from curriculum planned time · timeline with connecting lines · race chart solo toggle · consistent call sign usage across all views |
+| 2026-05-20 | `ea1ba9e` | **feat:** collapsible "How it Works" panel (details/summary) · hours/day cap mode toggle (scheduler, monthly stats, chart all update) |
+| 2026-05-20 | `340d3d3` | **fix:** schedule starts from tomorrow (Bangkok time); `computeLwM()` initialises eligibility gap from real last-flight date |
+| 2026-05-20 | `340ffb6` | **feat:** simulation explanation panel · Flight Plans footer fix (next lesson date + "Finish:" label) · planning horizon desc updated |
+| 2026-05-20 | `9e7eb39` | **feat:** SIMULATION overhaul — renamed Capacity→Simulation, sub-nav, finish-date projection cards, extra batch support, capacity chart |
+| 2026-05-19 | | **feat:** AP127 Detail — call sign column, IDLE days, DAY delta (color coded), timeline connecting lines, race chart per-student toggle |
 | 2026-05-11 | `ad29c3a` | **feat:** status bands · capacity page · mobile nav hamburger · timezone fix |
 | 2026-05-10 | `7f5ac65` | chore: automated cache updates |
 | (earlier) | | Chrome cache bypass fix; Node v20→v22; admin password hashing; AP127 pace bands |
@@ -376,9 +403,37 @@ Push to main
 
 ---
 
-## 15. Known Issues / Backlog
+## 15. Simulation Page (2026-05-20)
+
+### Scheduler Parameters
+- **Daily Flight Cap** / **Daily Hour Cap** — slider (5–50 for flights, 10–200 for hours)
+- **Cap Mode toggle** — Flights ↔ Hours. In hours mode the slider label, unit, and default reset; scheduler uses `planned_mins/60` per lesson
+- **AP129 Start Date** — text input `YYYY-MM-DD`; AP129 always uses 13 students and AP127 curriculum
+- **Planning Horizon** — slider 200–1 200 workdays from tomorrow
+- **Additional Batches** — add/remove extra batches (name, N students, start date); all use AP127 curriculum; priority after AP129
+
+### How the Simulation Works panel
+Collapsible `<details>` element. Explains: schedule start, priority order, daily cap, eligibility gaps, workdays, curriculum counts per batch, ETC basis, locked-in vs projected-only distinction.
+
+### Estimated Finish Dates cards
+One card per batch (AP124, AP126, AP127, AP129, each extra batch). Shows: batch name, projected last finish date, progress bar, Done %, First finishes date, Months to go, Lessons left.
+
+### Capacity chart (`c-sim-cap`)
+Stacked bar by batch per month. In flights mode: avg flights/workday. In hours mode: avg hrs/workday. Dashed line = daily cap. "NOW" vertical marker.
+
+### Global state
+```js
+let SIM_G = null;           // simulation result — never overwrites live G
+let EXTRA_BATCHES = [];     // user-defined extra batch configs
+const EXTRA_COLORS = [...]; // 6 preset colors cycling for extra batches
+```
+
+---
+
+## 16. Known Issues / Backlog
 
 - **AP127_NICKS array is duplicated** in `index.html` and `update-cache.js` — should be sourced from one place (e.g., `cache.json` or a shared `config.json`).
 - **Input validation missing in Admin** — invalid AP129 start date silently fails.
 - **`new Date().toISOString().slice(0,10)`** used for "today" in `buildAP127RaceChart` and `renderCal` — returns UTC date, which is one day behind for Bangkok users after midnight UTC (before 7 AM BKK). Low-impact; fix by using local date parts instead.
 - **Monolithic HTML** — all CSS, HTML, JS in one file. Works fine for this project scale; consider modularising if it grows significantly.
+- **Hour mode not persisted to Admin** — `CFG.hourMode` is in-memory only; resetting the page reverts to flights mode.
