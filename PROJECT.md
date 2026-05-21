@@ -1,6 +1,6 @@
 # AP127 Dashboard — Project Reference
 
-> **Last updated:** 2026-05-20  
+> **Last updated:** 2026-05-21  
 > **Repo:** https://github.com/nuguitar/AP127_NGT_001  
 > **Live site:** deployed via GitHub Pages (URL injected from `RELAY_URL` secret at build time)
 
@@ -119,6 +119,8 @@ _updated    – ISO timestamp of last cache write
 { "lesson": "CDGL 01", "planned_mins": 60, "planned_date": "2026-03-31" }
 ```
 
+> **AUPRT exclusion:** Any lesson or flown entry whose name matches `/^AUPRT/i` is silently dropped inside `parseCSV()` in both `index.html` and `update-cache.js`. This means `total`, `done`, `pct`, `remaining`, `finish`, and all scheduler projections never include AUPRT lessons.
+
 ---
 
 ## 5. Batches
@@ -141,6 +143,8 @@ AP127_NICKS = ["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN",
 ---
 
 ## 6. Scheduler (`runScheduler` in both files)
+
+> **Note:** Lessons whose name starts with `AUPRT` (case-insensitive) are excluded at the `parseCSV` stage and never reach the scheduler or any view. See §4 Data Model note.
 
 **Signature:** `runScheduler(batchData, curricula, extraBatches=[], startDate="", hourMode=false)`
 
@@ -354,6 +358,7 @@ Push to main
 
 | Date | Commit | Description |
 |---|---|---|
+| 2026-05-21 | `e68d967` | **feat:** exclude AUPRT lessons from all calculations and views — filtered at `parseCSV()` in both files |
 | 2026-05-20 | `ea1ba9e` | **feat:** collapsible "How it Works" panel (details/summary) · hours/day cap mode toggle (scheduler, monthly stats, chart all update) |
 | 2026-05-20 | `340d3d3` | **fix:** schedule starts from tomorrow (Bangkok time); `computeLwM()` initialises eligibility gap from real last-flight date |
 | 2026-05-20 | `340ffb6` | **feat:** simulation explanation panel · Flight Plans footer fix (next lesson date + "Finish:" label) · planning horizon desc updated |
