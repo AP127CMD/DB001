@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AP127 Flight Progress</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Nunito:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#0d1117;--s1:#161b22;--s2:#1c2128;--s3:#21262d;--bd:#30363d;--bd2:#21262d;
+  --tx:#e6edf3;--tx2:#8b949e;--tx3:#6e7681;
+  --c127:#fb923c;--c127b:rgba(251,146,60,.12);
+  --acc:#f59e0b;--done:#22c55e;
+}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--tx);font-family:'Nunito',sans-serif;font-size:13px;min-height:100vh;}
+nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 14px;gap:0;}
+.nb{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--acc);padding:11px 14px 11px 0;letter-spacing:1px;}
+.nright{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--tx3);flex-shrink:0;transition:background .3s;}
+.sdot.live{background:var(--done);box-shadow:0 0 6px var(--done);}
+.sdot.loading{background:var(--acc);animation:blink .7s infinite alternate;}
+.sdot.err{background:#ef4444;}
+@keyframes blink{to{opacity:.2;}}
+.stxt{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);}
+.page{display:none;padding:14px;max-width:1400px;margin:0 auto;}.page.active{display:block;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--s2);}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px;}
+.toast{position:fixed;bottom:18px;right:18px;z-index:999;background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;max-width:320px;transform:translateY(60px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.ok{border-left:3px solid var(--done);color:var(--done);}
+.toast.er{border-left:3px solid #ef4444;color:#ef4444;}
+.toast.wa{border-left:3px solid var(--acc);color:var(--acc);}
+/* AP127 DETAIL */
+.d127-wrap{display:grid;gap:10px;}
+.d127-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.d127-kpi{background:var(--s1);border:1px solid var(--bd);border-radius:7px;padding:10px 12px;}
+.d127-kl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;}
+.d127-kv{font-family:'Rajdhani',sans-serif;font-size:25px;line-height:1.1;margin-top:3px;}
+.d127-ks{font-size:10px;color:var(--tx2);}
+.d127-person{font-family:'Rajdhani',sans-serif;font-size:17px;line-height:1.1;color:var(--tx);font-weight:700;margin-top:5px;}
+.d127-person small{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);font-weight:500;text-transform:uppercase;letter-spacing:.6px;margin-right:4px;}
+.d127-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--s1);border:1px solid var(--bd);border-radius:7px;padding:9px 10px;}
+.d127-controls input,.d127-controls select{background:var(--s2);border:1px solid var(--bd);color:var(--tx);border-radius:5px;padding:6px 9px;font-size:12px;outline:none;}
+.d127-controls input{flex:1;min-width:220px;}
+.d127-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);}
+.d127-grid{display:grid;grid-template-columns:1.8fr 1fr;gap:10px;}
+.d127-panel{background:var(--s1);border:1px solid var(--bd);border-radius:7px;overflow:hidden;}
+.d127-h{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-bottom:1px solid var(--bd2);}
+.d127-t{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--c127);text-transform:uppercase;letter-spacing:1px;}
+.d127-s{font-size:10px;color:var(--tx3);}
+.d127-table-wrap{overflow:auto;}
+.d127-table{width:100%;border-collapse:collapse;min-width:760px;}
+.d127-table th,.d127-table td{padding:7px 6px;border-bottom:1px solid var(--bd2);text-align:left;font-size:10.5px;}
+.d127-table th{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;background:rgba(255,255,255,.01);}
+.d127-table tr{cursor:pointer;}
+.d127-table tr:hover{background:rgba(251,146,60,.08);}
+.d127-rank{font-family:'Rajdhani',sans-serif;font-size:19px;line-height:1;}
+.d127-name{font-weight:700;font-size:12px;}
+.d127-mono{font-family:'JetBrains Mono',monospace;font-size:10px;}
+.d127-pbg{width:82px;height:5px;background:var(--s3);border-radius:99px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:5px;}
+.d127-pf{height:100%;background:var(--c127);}
+.d127-side{display:flex;flex-direction:column;gap:10px;}
+.d127-body{padding:10px;}
+.d127-act{display:flex;flex-direction:column;gap:7px;}
+.d127-ai{background:var(--s2);border:1px solid var(--bd2);border-radius:6px;padding:7px 8px;}
+.d127-an{font-weight:700;font-size:11px;}
+.d127-ad{font-size:10px;color:var(--tx2);margin-top:2px;}
+.d127-legend{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;}
+.d127-code{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--c127);}
+.d127-desc{font-size:10px;color:var(--tx2);}
+.d127-draw-ov{position:fixed;inset:0;background:rgba(0,0,0,.56);z-index:950;display:none;align-items:flex-end;justify-content:center;}
+.d127-draw-ov.show{display:flex;}
+.d127-draw{width:min(980px,96vw);max-height:86vh;background:var(--s1);border:1px solid var(--bd);border-radius:10px 10px 0 0;overflow:auto;}
+.d127-dh{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--bd2);position:sticky;top:0;background:var(--s1);}
+.d127-dn{font-family:'Rajdhani',sans-serif;font-size:24px;line-height:1;}
+.d127-dm{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);}
+.d127-close{background:transparent;border:1px solid var(--bd);color:var(--tx2);border-radius:5px;padding:4px 8px;cursor:pointer;font-size:10px;}
+.d127-dg{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 12px 12px;}
+.d127-list{background:var(--s2);border:1px solid var(--bd2);border-radius:7px;padding:9px 10px;}
+.d127-lh{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);margin-bottom:7px;text-transform:uppercase;}
+.d127-li{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+.d127-li:last-child{border:none;}
+.d127-ldt{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);width:72px;flex-shrink:0;}
+.d127-ll{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx);}
+.d127-ld{margin-left:auto;font-size:9px;color:var(--tx2);}
+.d127-note{font-size:10px;color:var(--tx3);margin-bottom:8px;}
+@media(max-width:900px){nav{align-items:flex-start;padding-bottom:6px}.nright{margin-left:0}.d127-kpis{grid-template-columns:repeat(2,1fr);}.d127-grid,.d127-dg{grid-template-columns:1fr;}.d127-table{min-width:690px}.d127-table th,.d127-table td{padding:6px 4px;font-size:9.5px}.d127-pbg{width:52px}.d127-table th:nth-child(2),.d127-table td:nth-child(2),.d127-table th:nth-child(4),.d127-table td:nth-child(4){display:none;}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nb">AP127 Flight Progress</div>
+  <div class="nright">
+    <div style="display:flex;align-items:center;gap:5px;"><div class="sdot loading" id="sdot"></div><span class="stxt" id="stxt">Loading...</span></div>
+  </div>
+</nav>
+
+<div id="page-ap127detail" class="page active">
+  <div class="d127-wrap">
+    <div class="d127-kpis">
+      <div class="d127-kpi"><div class="d127-kl">Students</div><div class="d127-kv" id="d127-k-stu">-</div><div class="d127-ks">Person</div></div>
+      <div class="d127-kpi"><div class="d127-kl">Curriculum</div><div class="d127-kv" id="d127-k-cur">-</div><div class="d127-ks">Lessons</div></div>
+      <div class="d127-kpi"><div class="d127-kl">Progress</div><div class="d127-kv" id="d127-k-prg">-</div><div class="d127-ks">Done vs Total</div></div>
+      <div class="d127-kpi"><div class="d127-kl">Total Hours</div><div class="d127-kv" id="d127-k-hrs">-</div><div class="d127-ks">Actual / Total</div></div>
+      <div class="d127-kpi"><div class="d127-kl">Ahead / Behind</div><div class="d127-person" id="d127-k-ahead"><small>Ahead</small>-</div><div class="d127-person" id="d127-k-behind"><small>Behind</small>-</div></div>
+    </div>
+    <div class="d127-controls">
+      <input id="d127-q" placeholder="Search name, callsign, or CATC ID..." oninput="renderAP127Detail()">
+      <select id="d127-sort" onchange="renderAP127Detail()">
+        <option value="behind">Sort: Most behind first</option>
+        <option value="ahead">Sort: Most ahead first</option>
+        <option value="hours">Sort: Most hours first</option>
+        <option value="name">Sort: Name A-Z</option>
+      </select>
+      <span class="d127-meta" id="d127-meta">-</span>
+    </div>
+    <div class="d127-grid">
+      <div class="d127-panel">
+        <div class="d127-h"><span class="d127-t">Progress Ranking</span><span class="d127-s" id="d127-asof">As of -</span></div>
+        <div class="d127-table-wrap">
+          <table class="d127-table">
+            <thead><tr><th>Rank</th><th>No.</th><th>Name</th><th>Call Sign</th><th>CATC ID</th><th>Done</th><th>Progress</th><th>Hours</th><th>Hrs Delta</th><th>Idle(days)</th><th>DAY delta</th><th>Last Lesson</th><th>Last FLT</th></tr></thead>
+            <tbody id="d127-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="d127-side">
+        <div class="d127-panel"><div class="d127-h"><span class="d127-t">Pace Bands</span><span class="d127-s">leader → lagger spread</span></div><div class="d127-body" id="d127-bands"></div></div>
+        <div class="d127-panel"><div class="d127-h"><span class="d127-t">Recent Flight</span><span class="d127-s">Latest updates</span></div><div class="d127-body d127-act" id="d127-activity"></div></div>
+        <div class="d127-panel">
+          <div class="d127-h"><span class="d127-t">Lesson Codes</span><span class="d127-s">Quick legend</span></div>
+          <div class="d127-body d127-legend">
+            <div><div class="d127-code">GL</div><div class="d127-desc">General handling</div></div>
+            <div><div class="d127-code">IL / IF</div><div class="d127-desc">Instrument phases</div></div>
+            <div><div class="d127-code">XV / XI</div><div class="d127-desc">Cross-country</div></div>
+            <div><div class="d127-code">NL</div><div class="d127-desc">Night flights</div></div>
+            <div><div class="d127-code">SP / PIC</div><div class="d127-desc">Solo / SPIC</div></div>
+            <div><div class="d127-code">M</div><div class="d127-desc">Multi-engine</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d127-panel">
+      <div class="d127-h"><span class="d127-t">Flight Timeline vs Progress</span><span class="d127-s" id="d127-tl-meta">-</span></div>
+      <div class="d127-body">
+        <div class="d127-note">Rows are sorted leader to lagger. Dots mark dates each student actually flew.</div>
+        <div id="d127-timeline-wrap" style="position:relative;height:330px;width:100%"><canvas id="d127-timeline"></canvas></div>
+      </div>
+    </div>
+    <div class="d127-panel">
+      <div class="d127-h"><span class="d127-t">Actual vs Planned</span><span class="d127-s" id="d127-race-meta">All 28 students with planned baseline</span></div>
+      <div class="d127-body">
+        <div class="d127-note">Solid lines are actual cumulative lessons to current date. Dashed line is planned target from curriculum dates.</div>
+        <div style="position:relative;height:330px"><canvas id="d127-race"></canvas></div>
+        <div id="d127-race-toggles" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding:8px;background:var(--s2);border-radius:4px;font-size:11px"></div>
+      </div>
+    </div>
+    <div class="d127-panel">
+      <div class="d127-h"><span class="d127-t">Overall Progress Bar View</span><span class="d127-s">Ahead at top, lag at bottom</span></div>
+      <div class="d127-body">
+        <div class="d127-note">X-axis = lesson number, Y-axis = all 28 students.</div>
+        <div style="position:relative;height:560px;width:100%"><canvas id="d127-overall"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="d127-draw-ov" id="d127-draw-ov" onclick="closeAP127Drawer()">
+  <div class="d127-draw" onclick="event.stopPropagation()">
+    <div class="d127-dh">
+      <div><div class="d127-dn" id="d127-d-name">-</div><div class="d127-dm" id="d127-d-meta">-</div></div>
+      <button class="d127-close" onclick="closeAP127Drawer()">Close</button>
+    </div>
+    <div class="d127-dg">
+      <div class="d127-list"><div class="d127-lh">Recent Completed Flights</div><div id="d127-d-flown"></div></div>
+      <div class="d127-list"><div class="d127-lh">Upcoming Planned Flights</div><div id="d127-d-plan"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const AP127_NICKS=["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN","K-SEE","KRIT","M-PHAN","N-PON","N-KALP","N-PHAT","P-THAN","P-KORN","P-KUL","P-DET","S-SIT","S-KORN","S-WITCH","S-WAN","T-KORN","T-WAJ","V-PHON","W-PHOL","W-POL","W-PONG"];
+const HOL=new Set(["2026-05-01","2026-05-04","2026-05-13","2026-06-01","2026-06-03","2026-07-28","2026-07-29","2026-07-30","2026-08-12","2026-10-13","2026-10-23","2026-12-07","2026-12-10","2026-12-31"]);
+
+// Worker URL is injected at deploy time via CF_WORKER_URL GitHub secret.
+// Format: https://your-worker.your-subdomain.workers.dev/ap127data
+const WORKER_URL='__WORKER_URL__';
+
+let G=null;
+const CHARTS={};
+let AP127_VIEW_ROWS=[];
+let AP127_RACE_SOLO=null;
+let tmr=null;
+
+function escHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function toast(msg,type="ok"){const el=document.getElementById("toast");el.textContent=msg;el.className="toast "+type+" show";clearTimeout(tmr);tmr=setTimeout(()=>el.classList.remove("show"),4000);}
+function setSS(state,txt){document.getElementById("sdot").className="sdot "+state;document.getElementById("stxt").textContent=txt;}
+function fd(ds){if(!ds||ds==="COMPLETE"||ds==="N/A")return ds;try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"2-digit"});}catch{return ds;}}
+function hm(m){if(!m)return"";return Math.floor(m/60)+"h"+(m%60?String(m%60).padStart(2,"0")+"m":"");}
+function mkC(id,cfg){const ctx=document.getElementById(id);if(!ctx)return null;const ex=Chart.getChart(ctx);if(ex)ex.destroy();return new Chart(ctx,cfg);}
+function copts(sx={},sy={},extra={}){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:"JetBrains Mono",size:9},color:"#8b949e",boxWidth:8}},...(extra.p||{})},scales:{x:{ticks:{font:{family:"JetBrains Mono",size:8},color:"#6e7681"},...sx},y:{ticks:{font:{family:"JetBrains Mono",size:9},color:"#6e7681"},...sy}}};}
+
+// ── AP127 DETAIL ──
+function ap127FmtDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}catch{return ds;}}
+function ap127ShortDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}catch{return ds;}}
+function ap127FlightMins(f){return f.actual_mins||f.mins||0;}
+function ap127Hours(s){const cur=G?.cur127||[];const lessonsMap={};cur.forEach(c=>{lessonsMap[c.lesson]=c.planned_mins||0;});return((s.flown||[]).reduce((a,f)=>a+(lessonsMap[f.lesson]||ap127FlightMins(f)),0))/60;}
+function ap127CurriculumHours(){return((G?.cur127||[]).reduce((a,c)=>a+(c.planned_mins||c.mins||0),0))/60;}
+function ap127PlannedHoursAsOf(today){return((G?.cur127||[]).filter(c=>c.planned_date&&c.planned_date<=today).reduce((a,c)=>a+(c.planned_mins||0),0))/60;}
+function ap127FmtNum(n,d=1){return Number(n||0).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});}
+function ap127LastFlightDate(s){return(s.flown||[]).map(f=>f.date).filter(Boolean).sort().at(-1)||"";}
+function ap127IdleDays(s,asOf){const last=ap127LastFlightDate(s);return last&&asOf?Math.max(0,ap127DateDiff(asOf,last)||0):9999;}
+function ap127DateDiff(a,b){if(!a||!b)return null;const ad=new Date(a+"T00:00:00"),bd=new Date(b+"T00:00:00");if(Number.isNaN(ad)||Number.isNaN(bd))return null;return Math.round((ad-bd)/86400000);}
+function ap127DayDelta(s,planMap,today){const last=(s.flown||[]).at(-1);if(!last)return null;const planDate=planMap[last.lesson];if(!planDate)return null;return ap127DateDiff(today,planDate);}
+function ap127PaceSort(arr,asOf){return[...arr].sort((a,b)=>(b.done||0)-(a.done||0)||ap127IdleDays(a,asOf)-ap127IdleDays(b,asOf));}
+function ap127BehindSort(arr,asOf){return[...arr].sort((a,b)=>(a.done||0)-(b.done||0)||ap127IdleDays(b,asOf)-ap127IdleDays(a,asOf));}
+function ap127SortRows(arr,asOf=""){
+  const mode=document.getElementById("d127-sort")?.value||"behind";
+  if(mode==="ahead")return ap127PaceSort(arr,asOf);
+  if(mode==="hours")return[...arr].sort((a,b)=>ap127Hours(b)-ap127Hours(a)||(b.done||0)-(a.done||0));
+  if(mode==="name")return[...arr].sort((a,b)=>a.name.localeCompare(b.name));
+  return ap127BehindSort(arr,asOf);
+}
+function renderAP127Detail(){
+  if(!G||!G.ap127)return;
+  const all=[...(G.ap127||[])];
+  const total=all.length;
+  const curriculum=all[0]?.total||0;
+  const doneAll=all.reduce((a,s)=>a+(s.done||0),0);
+  const hrsAll=all.reduce((a,s)=>a+ap127Hours(s),0);
+  const totalHours=ap127CurriculumHours()*total;
+  const avgDone=total?doneAll/total:0;
+  const maxDate=all.flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"";
+  const sortedLead=ap127PaceSort(all,maxDate);
+  const sortedLag=ap127BehindSort(all,maxDate);
+  const aheadNames=sortedLead.slice(0,3).map(s=>s.nick||s.name.split(" ")[0]).join(", ");
+  const lagNames=sortedLag.slice(0,3).map(s=>s.nick||s.name.split(" ")[0]).join(", ");
+  const prg=(total&&curriculum)?(doneAll/(total*curriculum)*100):0;
+  const planMap={};(G.cur127||[]).forEach(c=>{if(c.lesson&&c.planned_date)planMap[c.lesson]=c.planned_date;});
+  document.getElementById("d127-k-stu").textContent=total||"-";
+  document.getElementById("d127-k-cur").textContent=curriculum||"-";
+  document.getElementById("d127-k-prg").textContent=prg.toFixed(1)+"%";
+  document.getElementById("d127-k-hrs").textContent=totalHours?`${ap127FmtNum(hrsAll)} / ${ap127FmtNum(totalHours,0)}`:ap127FmtNum(hrsAll);
+  document.getElementById("d127-k-ahead").innerHTML=`<small>Ahead</small>${aheadNames||"-"}`;
+  document.getElementById("d127-k-behind").innerHTML=`<small>Behind</small>${lagNames||"-"}`;
+  document.getElementById("d127-meta").textContent=`${doneAll} lessons done · Avg ${avgDone.toFixed(1)}`;
+  const q=(document.getElementById("d127-q")?.value||"").toLowerCase().trim();
+  let rows=ap127SortRows(all,maxDate);
+  if(q)rows=rows.filter(s=>s.name.toLowerCase().includes(q)||(s.nick||"").toLowerCase().includes(q)||(s.catc_id||"").toLowerCase().includes(q));
+  AP127_VIEW_ROWS=rows;
+  const updTxt=G._updated?new Date(G._updated).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
+  document.getElementById("d127-asof").textContent=`Updated ${updTxt}`;
+  const paced=ap127PaceSort(all,maxDate);
+  const leaderDone=paced[0]?.done||0,lagDone=paced.at(-1)?.done||0;
+  const spread=Math.max(leaderDone-lagDone,1),step=Math.max(Math.ceil(spread/3),1);
+  const aheadLo=leaderDone-step+1,midLo=leaderDone-step*2+1;
+  const getBandColor=(done)=>{if(done>=aheadLo)return"#7be9b8";if(done>=midLo)return"#ffd67a";return"#ffa0a0";};
+  const tbody=document.getElementById("d127-rows");
+  const today=new Date().toISOString().slice(0,10);
+  tbody.innerHTML=rows.map((s,idx)=>{
+    const rank=idx+1,pct=curriculum?((s.done||0)/curriculum*100):0;
+    const hrs=ap127Hours(s);
+    const plannedHrs=ap127PlannedHoursAsOf(today);
+    const hrsDelta=hrs-plannedHrs;
+    const hrsDeltaTxt=(hrsDelta>=0?"+":"")+hrsDelta.toFixed(1)+"h";
+    const hrsDeltaColor=hrsDelta>=0?"#51cf66":"#ff6b6b";
+    const idle=ap127IdleDays(s,maxDate);
+    const idleTxt=idle===9999?"-":idle.toString();
+    const dayDelta=ap127DayDelta(s,planMap,today);
+    const dayDeltaTxt=dayDelta===null?"-":(dayDelta>=0?`+${dayDelta}d`:`${dayDelta}d`);
+    const dayDeltaColor=dayDelta===null?"":dayDelta>0?"#ff6b6b":"#51cf66";
+    const rankColor=getBandColor(s.done||0);
+    const last=(s.flown||[]).at(-1)||{};
+    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td class="d127-mono">${String(idx+1).padStart(2,"0")}</td><td><div class="d127-name">${s.name}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono">${s.catc_id||"-"}</td><td class="d127-mono">${s.done||0}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td><td class="d127-mono">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td></tr>`;
+  }).join("");
+  const bandDefs=[
+    {label:"AHEAD",lo:aheadLo,hi:leaderDone,c:"#7be9b8"},
+    {label:"MID",lo:midLo,hi:aheadLo-1,c:"#ffd67a"},
+    {label:"BEHIND",lo:lagDone,hi:midLo-1,c:"#ffa0a0"},
+  ];
+  bandDefs.forEach(b=>{b.students=paced.filter(s=>(s.done||0)>=b.lo&&(s.done||0)<=b.hi);});
+  const maxN=Math.max(...bandDefs.map(b=>b.students.length),1);
+  document.getElementById("d127-bands").innerHTML=bandDefs.map(b=>{
+    const rangeStr=b.lo>=b.hi?`${b.lo}`:`${b.lo}–${b.hi}`;
+    const names=b.students.map(s=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8px;padding:1px 5px;border-radius:2px;background:${b.c}22;color:${b.c}">${s.nick||s.name.split(" ")[0]}</span>`).join("");
+    return `<div style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:74px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.5px;color:${b.c}">${b.label}<br><span style="color:var(--tx3);font-size:8px">${rangeStr}</span></div><div style="flex:1;height:16px;background:var(--s3);border-radius:99px;overflow:hidden"><div style="height:100%;width:${(b.students.length/maxN*100)}%;background:${b.c};display:flex;align-items:center;padding-left:7px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#000">${b.students.length}</div></div></div><div style="display:flex;flex-wrap:wrap;gap:3px;padding-left:81px">${names||"—"}</div></div>`;
+  }).join("");
+  const recent=[...all].map(s=>({s,last:(s.flown||[]).at(-1)||{}})).filter(x=>x.last.date).sort((a,b)=>(b.last.date||"").localeCompare(a.last.date||"")||(b.s.done||0)-(a.s.done||0)).slice(0,8);
+  document.getElementById("d127-activity").innerHTML=recent.map(x=>`<div class="d127-ai"><div class="d127-an">${x.s.nick||x.s.name} · ${x.last.lesson||"-"}</div><div class="d127-ad">${ap127FmtDate(x.last.date)} · ${ap127Hours(x.s).toFixed(2)} hrs · ${x.s.done||0}/${curriculum}</div></div>`).join("")||`<div class="d127-ad">No activity yet.</div>`;
+  buildAP127Timeline(all,curriculum,maxDate);
+  buildAP127RaceChart(all,curriculum,maxDate);
+  buildAP127OverallChart(all,curriculum,maxDate);
+}
+function openAP127Drawer(idx){
+  const s=AP127_VIEW_ROWS[idx];if(!s)return;
+  const total=s.total||0,done=s.done||0;
+  document.getElementById("d127-d-name").textContent=s.name;
+  document.getElementById("d127-d-meta").textContent=`${s.nick||"-"} · ${s.catc_id||"-"} · ${done}/${total} lessons · ${ap127Hours(s).toFixed(2)} hrs`;
+  const flown=(s.flown||[]).slice(-14).reverse();
+  document.getElementById("d127-d-flown").innerHTML=flown.length?flown.map(f=>`<div class="d127-li"><div class="d127-ldt">${ap127FmtDate(f.date)}</div><div class="d127-ll">${f.lesson||"-"}</div><div class="d127-ld">${hm(ap127FlightMins(f))}</div></div>`).join(""):`<div class="d127-ad">No completed flights.</div>`;
+  const plan=(s.planned||[]).slice(0,14);
+  document.getElementById("d127-d-plan").innerHTML=plan.length?plan.map(p=>`<div class="d127-li"><div class="d127-ldt">${ap127FmtDate(p.date)}</div><div class="d127-ll">${p.lesson||"-"}</div><div class="d127-ld">${hm(p.mins||p.planned_mins||0)}</div></div>`).join(""):`<div class="d127-ad">No planned flights.</div>`;
+  document.getElementById("d127-draw-ov").classList.add("show");
+}
+function closeAP127Drawer(){document.getElementById("d127-draw-ov").classList.remove("show");}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAP127Drawer();});
+
+function buildAP127Timeline(all,curriculum,maxDate){
+  const sorted=ap127PaceSort(all,maxDate);
+  const wrap=document.getElementById("d127-timeline-wrap");
+  if(wrap)wrap.style.height=Math.max(420,sorted.length*22)+"px";
+  const dateSet=new Set();
+  sorted.forEach(s=>(s.flown||[]).forEach(f=>{if(f.date)dateSet.add(f.date);}));
+  const labels=[...dateSet].sort();
+  const pal=["#22c55e","#38bdf8","#a78bfa","#f59e0b","#ef4444"];
+  const total=Math.max(sorted.length,1);
+  const datasets=sorted.map((s,idx)=>{
+    const seg=idx<Math.ceil(total*.2)?0:idx<Math.ceil(total*.5)?1:idx<Math.ceil(total*.75)?2:idx<Math.ceil(total*.9)?3:4;
+    const col=pal[seg];
+    const flownDates=(s.flown||[]).filter(f=>f.date).map(f=>({x:f.date,y:idx+1}));
+    return{label:s.nick||s.name,data:flownDates,showLine:true,borderColor:col,borderWidth:0.8,pointRadius:2.4,pointHoverRadius:3.6,pointBackgroundColor:col,pointBorderWidth:0,tension:0};
+  });
+  CHARTS.ap127timeline=mkC("d127-timeline",{
+    type:"line",
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{title:(ctx)=>ap127FmtDate(ctx[0]?.label||""),label:(ctx)=>`${ctx.dataset.label}`}}
+      },
+      scales:{
+        x:{ticks:{font:{family:"JetBrains Mono",size:8},color:"#6e7681",maxRotation:0,autoSkip:true,maxTicksLimit:16},grid:{color:"#21262d"}},
+        y:{reverse:true,min:.5,max:sorted.length+.5,afterFit:scale=>{scale.width=100;},ticks:{stepSize:1,autoSkip:false,font:{family:"JetBrains Mono",size:7},color:"#8b949e",callback:v=>{const i=Math.round(v)-1;return(i>=0&&i<sorted.length)?`${i+1}. ${sorted[i].nick||sorted[i].name.split(" ")[0]}`:"";},},grid:{color:"#21262d"}}
+      }
+    }
+  });
+  const lead=sorted[0],lag=sorted.at(-1);
+  document.getElementById("d127-tl-meta").textContent=lead&&lag?`Leader ${lead.nick||lead.name.split(" ")[0]} (${lead.done||0}/${curriculum}) · Lag ${lag.nick||lag.name.split(" ")[0]} (${lag.done||0}/${curriculum})`:"-";
+}
+
+function buildAP127RaceChart(all,curriculum,maxDate){
+  const racers=ap127PaceSort(all,maxDate);
+  const today=new Date().toISOString().slice(0,10);
+  const plannedDates=(G.cur127||[]).map(c=>c.planned_date).filter(d=>d&&d<=today).sort();
+  const dateSet=new Set(plannedDates);
+  dateSet.add(today);
+  racers.forEach(s=>(s.flown||[]).forEach(f=>{if(f.date&&f.date<=today)dateSet.add(f.date);}));
+  const labels=[...dateSet].sort();
+  const cumSeries=(flightDates)=>{
+    const flightSet=new Set(flightDates);
+    const cnt={};flightDates.forEach(d=>{cnt[d]=(cnt[d]||0)+1;});
+    let run=0;
+    return labels.map(d=>{run+=(cnt[d]||0);return{y:run,r:flightSet.has(d)?3:0};});
+  };
+  const planCnt={};plannedDates.forEach(d=>{planCnt[d]=(planCnt[d]||0)+1;});
+  let planRun=0;const planData=labels.map(d=>{planRun+=(planCnt[d]||0);return planRun;});
+  const datasets=[{label:"Planned Target",data:planData,borderColor:"#cbd5e1",pointRadius:0,tension:.25,borderDash:[6,4],borderWidth:2}];
+  racers.forEach((s,i)=>{
+    const hue=(i*360/Math.max(racers.length,1)).toFixed(0);
+    const col=`hsla(${hue},85%,62%,0.8)`;
+    const nick=s.nick||s.name;
+    const ad=(s.flown||[]).map(f=>f.date).filter(d=>d&&d<=today).sort();
+    const visible=AP127_RACE_SOLO===null||AP127_RACE_SOLO===nick;
+    const pts=cumSeries(ad);
+    datasets.push({label:nick,data:pts.map(p=>p.y),borderColor:col,pointRadius:pts.map(p=>p.r),pointHoverRadius:pts.map(p=>p.r?5:0),pointBackgroundColor:col,pointBorderWidth:0,tension:.18,borderWidth:visible?1.5:0,hidden:!visible});
+  });
+  CHARTS.ap127race=mkC("d127-race",{
+    type:"line",data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:(ctx)=>ap127FmtDate(ctx[0]?.label||""),label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y}`}}},
+      scales:{
+        x:{ticks:{font:{family:"JetBrains Mono",size:8},color:"#6e7681",maxTicksLimit:18},grid:{color:"#21262d"}},
+        y:{beginAtZero:true,ticks:{font:{family:"JetBrains Mono",size:9},color:"#8b949e"},grid:{color:"#21262d"}}
+      }
+    }
+  });
+  const togglesDiv=document.getElementById("d127-race-toggles");
+  togglesDiv.innerHTML="";
+  const allBtn=document.createElement("button");
+  allBtn.textContent="ALL";
+  allBtn.style.cssText=`padding:4px 10px;background:${AP127_RACE_SOLO===null?"#4ade80":"#30363d"};color:${AP127_RACE_SOLO===null?"#000":"#8b949e"};border:0;border-radius:3px;cursor:pointer;font-weight:700;font-size:10px;font-family:'JetBrains Mono',monospace`;
+  allBtn.onclick=()=>{AP127_RACE_SOLO=null;buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");};
+  togglesDiv.appendChild(allBtn);
+  racers.forEach(s=>{
+    const nick=s.nick||s.name;
+    const active=AP127_RACE_SOLO===nick;
+    const btn=document.createElement("button");
+    btn.textContent=nick;
+    btn.style.cssText=`padding:4px 8px;background:${active?"#38bdf8":"#30363d"};color:${active?"#000":"#8b949e"};border:0;border-radius:3px;cursor:pointer;font-size:10px;font-family:'JetBrains Mono',monospace`;
+    btn.onclick=()=>{AP127_RACE_SOLO=active?null:nick;buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");};
+    togglesDiv.appendChild(btn);
+  });
+  document.getElementById("d127-race-meta").textContent=`${all.length} students · actual to ${ap127FmtDate(today)} · planned baseline`;
+}
+
+function buildAP127OverallChart(all,curriculum,maxDate){
+  const sorted=ap127PaceSort(all,maxDate);
+  const maxDone=Math.max(...sorted.map(s=>s.done||0),1);
+  CHARTS.ap127overall=mkC("d127-overall",{
+    type:"bar",
+    data:{
+      labels:sorted.map(s=>s.nick||s.name.split(" ")[0]),
+      datasets:[{label:"Completed Lessons",data:sorted.map(s=>s.done||0),backgroundColor:sorted.map((_,i)=>{const hue=(i*360/Math.max(sorted.length,1)).toFixed(0);return`hsla(${hue},80%,58%,0.74)`;})
+      }]
+    },
+    options:{
+      indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>`${ctx.parsed.x}/${curriculum}`}}},
+      scales:{
+        x:{min:0,max:maxDone,ticks:{font:{family:"JetBrains Mono",size:8},color:"#8b949e",stepSize:Math.max(1,Math.ceil(maxDone/8))},grid:{color:"#21262d"}},
+        y:{afterFit:scale=>{scale.width=100;},ticks:{font:{family:"JetBrains Mono",size:8},color:"#8b949e",autoSkip:false},grid:{color:"#21262d"}}
+      }
+    }
+  });
+}
+
+// ── INIT ──
+(async function(){
+  let data={};
+  try{
+    if(WORKER_URL&&!WORKER_URL.startsWith('__')){
+      const r=await fetch(WORKER_URL,{cache:'no-store'});
+      if(r.ok)data=await r.json();
+    }else{
+      // Development fallback: fetch local cache.json
+      const r=await fetch('cache.json',{cache:'no-cache'});
+      if(r.ok)data=await r.json();
+    }
+  }catch(e){console.warn('Data fetch failed',e);}
+  data.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
+  G=data;
+  renderAP127Detail();
+  const upd=G._updated?new Date(G._updated).toLocaleString("en-GB",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
+  setSS(G.ap127?.length?"live":"err",G.ap127?.length?"Updated · "+upd:"No data available");
+})();
+</script>
+</body>
+</html>
