@@ -358,6 +358,7 @@ Push to main
 
 | Date | Commit | Description |
 |---|---|---|
+| 2026-05-22 | — | **feat:** AP127 Detail table overhaul — short name format, FI column, Progress + HRS DONE restored, IDLE color coding, 12-column reorder, mobile updated |
 | 2026-05-21 | `e68d967` | **feat:** exclude AUPRT lessons from all calculations and views — filtered at `parseCSV()` in both files |
 | 2026-05-20 | `ea1ba9e` | **feat:** collapsible "How it Works" panel (details/summary) · hours/day cap mode toggle (scheduler, monthly stats, chart all update) |
 | 2026-05-20 | `340d3d3` | **fix:** schedule starts from tomorrow (Bangkok time); `computeLwM()` initialises eligibility gap from real last-flight date |
@@ -370,18 +371,26 @@ Push to main
 
 ---
 
-## 14. AP127 Detail Page Improvements (2026-05-19)
+## 14. AP127 Detail Page Improvements (2026-05-19 · updated 2026-05-22)
 
 ### Student Ranking Table
-- **Call Sign column:** Moved call sign (e.g., A-RUT) from secondary display below name to dedicated column for clearer identification
-- **IDLE(days) column:** Shows number of days since student's last flight to current date
-- **Hours calculation:** Changed from actual flight time to planned curriculum time per completed lesson (more accurate for planning)
-- **DAY delta column:** 
-  - Replaces "Plan Delta" with focus on last lesson date vs. plan
-  - Calculates: current date minus planned date of last completed lesson
-  - Positive = delay (shown in red), negative = ahead (shown in green)
-  - Example: If last lesson CDGL 02 has plan date 2026-05-09 and today is 2026-05-19, shows +10 days (delay) in red
-- **Last FLT column:** Renamed from "Last Date" for clarity (shows date of last completed flight)
+
+**Column order:** RANK · NAME · CALL SIGN · FI · Progress · HRS DONE · LESSON DONE · LAST LESSON · LAST FLT · IDLE (DAYS) · DAY DELTA · HRS DELTA
+
+- **NAME format:** First name + first letter of last name + dot (e.g. "Akaravit K.") via `ap127ShortName()`
+- **CATC ID column:** Removed
+- **FI column:** Flight Instructor call sign per student — hardcoded in `AP127_FI[]` array (index-matched to `AP127_NICKS[]`). Assigned to `s.fi` at all same spots as `s.nick`.
+- **Progress column:** Progress bar + percentage, placed after FI
+- **HRS DONE column:** Planned curriculum hours for completed lessons (was "Hours"), 2-line header
+- **LESSON DONE column:** Count of completed lessons (was "Done"), 2-line header
+- **IDLE (DAYS) column:** Days since student's last flight; 2-line header. Color coded:
+  - 1–2 days: white (`--tx`)
+  - 3–5 days: yellow (`#fbbf24`)
+  - 6–10 days: red (`#ff6b6b`)
+  - >10 days: red text + white background (`rgba(255,255,255,0.85)`)
+- **DAY delta column:** Current date minus planned date of last completed lesson. Positive = delay (red), negative = ahead (green)
+- **Last FLT column:** Date of last completed flight
+- **Mobile:** Hides FI (col 4) and LAST LESSON (col 8)
 
 ### Flight Timeline vs Progress
 - **Connecting lines:** Lines now connect dots for each student to visualize flight progression over time

@@ -226,7 +226,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .pf-filter .pt{margin-bottom:7px;color:var(--adm);}
 .pf-filter .fr{margin-bottom:0;}
 .pf-filter .fr input,.pf-filter .fr select{background:var(--s2);}
-@media(max-width:900px){nav{align-items:flex-start;padding-bottom:6px}.nright{margin-left:0}.ss{grid-template-columns:repeat(2,1fr);}.cr.c2,.cr.c3{grid-template-columns:1fr;}.sg{grid-template-columns:1fr;}.lg-grid{grid-template-columns:repeat(2,1fr);}.d127-kpis{grid-template-columns:repeat(2,1fr);}.d127-grid,.d127-dg{grid-template-columns:1fr;}.d127-table{min-width:690px}.d127-table th,.d127-table td{padding:6px 4px;font-size:9.5px}.d127-pbg{width:52px}.d127-table th:nth-child(2),.d127-table td:nth-child(2),.d127-table th:nth-child(4),.d127-table td:nth-child(4){display:none;}#sim-subnav{flex-wrap:nowrap;overflow-x:auto;}.sim-finish-grid{grid-template-columns:1fr;}.sim-ctrl-row{grid-template-columns:1fr;}.bt{padding:8px 14px;font-size:12px;}}
+@media(max-width:900px){nav{align-items:flex-start;padding-bottom:6px}.nright{margin-left:0}.ss{grid-template-columns:repeat(2,1fr);}.cr.c2,.cr.c3{grid-template-columns:1fr;}.sg{grid-template-columns:1fr;}.lg-grid{grid-template-columns:repeat(2,1fr);}.d127-kpis{grid-template-columns:repeat(2,1fr);}.d127-grid,.d127-dg{grid-template-columns:1fr;}.d127-table{min-width:690px}.d127-table th,.d127-table td{padding:6px 4px;font-size:9.5px}.d127-pbg{width:52px}.d127-table th:nth-child(4),.d127-table td:nth-child(4),.d127-table th:nth-child(8),.d127-table td:nth-child(8){display:none;}#sim-subnav{flex-wrap:nowrap;overflow-x:auto;}.sim-finish-grid{grid-template-columns:1fr;}.sim-ctrl-row{grid-template-columns:1fr;}.bt{padding:8px 14px;font-size:12px;}}
 /* SIMULATION SUB-NAV */
 #sim-subnav{display:none;position:sticky;top:47px;z-index:298;background:rgba(13,17,23,.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);padding:0 14px;gap:0;align-items:center;flex-wrap:wrap;}
 #sim-subnav.show{display:flex;}
@@ -517,7 +517,7 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
       <div class="d127-kpi"><div class="d127-kl">Ahead / Behind</div><div class="d127-person" id="d127-k-ahead"><small>Ahead</small>-</div><div class="d127-person" id="d127-k-behind"><small>Behind</small>-</div></div>
     </div>
     <div class="d127-controls">
-      <input id="d127-q" placeholder="Search name, callsign, or CATC ID..." oninput="renderAP127Detail()">
+      <input id="d127-q" placeholder="Search name or callsign..." oninput="renderAP127Detail()">
       <select id="d127-sort" onchange="renderAP127Detail()">
         <option value="behind">Sort: Most behind first</option>
         <option value="ahead">Sort: Most ahead first</option>
@@ -531,7 +531,7 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
         <div class="d127-h"><span class="d127-t">Progress Ranking</span><span class="d127-s" id="d127-asof">As of -</span></div>
         <div class="d127-table-wrap">
           <table class="d127-table">
-            <thead><tr><th>Rank</th><th>No.</th><th>Name</th><th>Call Sign</th><th>CATC ID</th><th>Done</th><th>Progress</th><th>Hours</th><th>Hrs Delta</th><th>Idle(days)</th><th>DAY delta</th><th>Last Lesson</th><th>Last FLT</th></tr></thead>
+            <thead><tr><th>Rank</th><th>Name</th><th>Call Sign</th><th>FI</th><th>Progress</th><th>HRS<br>DONE</th><th>LESSON<br>DONE</th><th>Last Lesson</th><th>Last FLT</th><th>IDLE<br>(DAYS)</th><th>DAY<br>Delta</th><th>HRS<br>Delta</th></tr></thead>
             <tbody id="d127-rows"></tbody>
           </table>
         </div>
@@ -662,6 +662,7 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
 <script>
 // cache.json loaded async
 const AP127_NICKS=["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN","K-SEE","KRIT","M-PHAN","N-PON","N-KALP","N-PHAT","P-THAN","P-KORN","P-KUL","P-DET","S-SIT","S-KORN","S-WITCH","S-WAN","T-KORN","T-WAJ","V-PHON","W-PHOL","W-POL","W-PONG"];
+const AP127_FI=["W-CHAI","P-YUTH","P-YA","S-TI","N-TORN","I-PON","SN-TI","S-TI","A-WAT","W-NU","K-POL","C-CHAI","P-YUTH","SN-TI","E-PHOB","K-POL","S-WAN","N-TORN","E-PHOB","I-PON","K-CHAI","K-CHAI","P-YA","S-WAN","C-CHAI","W-NU","W-CHAI","A-WAT"];
 const HOL=new Set(["2026-05-01","2026-05-04","2026-05-13","2026-06-01","2026-06-03","2026-07-28","2026-07-29","2026-07-30","2026-08-12","2026-10-13","2026-10-23","2026-12-07","2026-12-10","2026-12-31"]);
 const BC={AP124:"#c084fc",AP126:"#38bdf8",AP127:"#fb923c",AP129:"#4ade80"};
 const BB={AP124:"rgba(192,132,252,.12)",AP126:"rgba(56,189,248,.12)",AP127:"rgba(251,146,60,.12)",AP129:"rgba(74,222,128,.12)"};
@@ -892,9 +893,9 @@ async function syncAll(){
     try{const d=await fetchBatch(batch);results[batch]=d.students;curricula[batch]=d.curriculum;ok.push(batch);}
     catch(e){errs.push(batch);dbg(batch+" failed: "+e.message,"er");const k="ap"+batch.slice(2).toLowerCase();results[batch]=G?.[k]||[];curricula[batch]=G?.["cur"+batch.slice(2).toLowerCase()]||[];}
   }
-  (results.AP127||[]).forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
+  (results.AP127||[]).forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";s.fi=AP127_FI[i]||"";});
   G=runScheduler(results,curricula);
-  (G.ap127||[]).forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
+  (G.ap127||[]).forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";s.fi=AP127_FI[i]||"";});
   btn.disabled=false;btn.textContent="⟳ Sync";
   const now=new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
   if(!errs.length){setSS("live","Live · "+now);toast("✓ All synced · "+now,"ok");dbg("All OK","ok");}
@@ -936,7 +937,7 @@ function copyScript(){
 }
 
 // ── PARAMS ──
-function applyParams(){CFG.cap=+document.getElementById("p-cap").value||25;CFG.n129=+document.getElementById("p-n129").value||13;CFG.ap129start=document.getElementById("p-129s").value||"2026-06-01";CFG.horizon=+document.getElementById("p-hor").value||800;const bd={AP124:G.ap124||[],AP126:G.ap126||[],AP127:G.ap127||[]};const cur={AP124:G.cur124||[],AP126:G.cur126||[],AP127:G.cur127||[]};G=runScheduler(bd,cur);(G.ap127||[]).forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});renderAll();toast("Recalculated","ok");}
+function applyParams(){CFG.cap=+document.getElementById("p-cap").value||25;CFG.n129=+document.getElementById("p-n129").value||13;CFG.ap129start=document.getElementById("p-129s").value||"2026-06-01";CFG.horizon=+document.getElementById("p-hor").value||800;const bd={AP124:G.ap124||[],AP126:G.ap126||[],AP127:G.ap127||[]};const cur={AP124:G.cur124||[],AP126:G.cur126||[],AP127:G.cur127||[]};G=runScheduler(bd,cur);(G.ap127||[]).forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";s.fi=AP127_FI[i]||"";});renderAll();toast("Recalculated","ok");}
 function getCFG(){CFG.recents=+document.getElementById("p-rec").value||3;CFG.upcomings=+document.getElementById("p-upc").value||8;CFG.cardH=+document.getElementById("p-ch").value||190;CFG.chartH=+document.getElementById("p-gch").value||190;CFG.showRest=document.getElementById("p-rest").checked;CFG.showNextTag=document.getElementById("p-ntag").checked;}
 function rerenderCards(){getCFG();const pg=document.querySelector(".page.active")?.id?.replace("page-","");if(pg==="plans")renderPlans();}
 function applyCardH(){getCFG();document.querySelectorAll(".sb2").forEach(e=>e.style.maxHeight=CFG.cardH+"px");}
@@ -1048,7 +1049,7 @@ function runSimulation(){
   const _d=new Date(Date.now()+7*3600000);_d.setUTCDate(_d.getUTCDate()+1);
   const tomorrowBKK=_d.toISOString().slice(0,10);
   SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,tomorrowBKK,CFG.hourMode||false);
-  SIM_G.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
+  SIM_G.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";s.fi=AP127_FI[i]||"";});
   const ms=Date.now()-t0;
   const statusEl=document.getElementById("sim-status");
   if(statusEl)statusEl.textContent=`Done in ${ms}ms · cap ${CFG.cap}/day · ${CFG.horizon}wd horizon`;
@@ -1200,6 +1201,7 @@ function renderPlans(){
 }
 
 // ── AP127 DETAIL ──
+function ap127ShortName(n){const p=n.trim().split(/\s+/);return p.length<2?n:p[0]+" "+p[p.length-1][0]+".";}
 function ap127FmtDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}catch{return ds;}}
 function ap127ShortDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}catch{return ds;}}
 function ap127FlightMins(f){return f.actual_mins||f.mins||0;}
@@ -1253,7 +1255,7 @@ function renderAP127Detail(){
 
   const q=(document.getElementById("d127-q")?.value||"").toLowerCase().trim();
   let rows=ap127SortRows(all,maxDate);
-  if(q)rows=rows.filter(s=>s.name.toLowerCase().includes(q)||(s.nick||"").toLowerCase().includes(q)||(s.catc_id||"").toLowerCase().includes(q));
+  if(q)rows=rows.filter(s=>s.name.toLowerCase().includes(q)||(s.nick||"").toLowerCase().includes(q));
   AP127_VIEW_ROWS=rows;
   const updTxt=G._updated?new Date(G._updated).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
   document.getElementById("d127-asof").textContent=`Updated ${updTxt}`;
@@ -1274,12 +1276,14 @@ function renderAP127Detail(){
     const hrsDeltaColor=hrsDelta>=0?"#51cf66":"#ff6b6b";
     const idle=ap127IdleDays(s,maxDate);
     const idleTxt=idle===9999?"-":idle.toString();
+    let idleStyle="";
+    if(idle!==9999){if(idle<=2)idleStyle="color:var(--tx)";else if(idle<=5)idleStyle="color:#fbbf24";else if(idle<=10)idleStyle="color:#ff6b6b";else idleStyle="color:#ff6b6b;background:rgba(255,255,255,0.85);border-radius:3px;padding:1px 5px";}
     const dayDelta=ap127DayDelta(s,planMap,today);
     const dayDeltaTxt=dayDelta===null?"-":(dayDelta>=0?`+${dayDelta}d`:`${dayDelta}d`);
     const dayDeltaColor=dayDelta===null?"":dayDelta>0?"#ff6b6b":"#51cf66";
     const rankColor=getBandColor(s.done||0);
     const last=(s.flown||[]).at(-1)||{};
-    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td class="d127-mono">${String(idx+1).padStart(2,"0")}</td><td><div class="d127-name">${s.name}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono">${s.catc_id||"-"}</td><td class="d127-mono">${s.done||0}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td><td class="d127-mono">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td></tr>`;
+    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td><div class="d127-name">${ap127ShortName(s.name)}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono">${s.fi||"-"}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${s.done||0}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td><td class="d127-mono" style="${idleStyle}">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td></tr>`;
   }).join("");
   const bandDefs=[
     {label:"AHEAD", lo:aheadLo,   hi:leaderDone, c:"#7be9b8"},
@@ -1729,7 +1733,7 @@ function renderAll(){
   loadLocal();
   let SEED={};
   try{const r=await fetch('cache.json',{cache:'no-cache'});if(r.ok)SEED=await r.json();}catch(e){dbg('cache.json not available','wa');}
-  SEED.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";});
+  SEED.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";s.fi=AP127_FI[i]||"";});
   G=SEED;
   const pfFrom=document.getElementById("pf-from"),pfTo=document.getElementById("pf-to"),pfRecent=document.getElementById("pf-recent-n");
   if(pfFrom)pfFrom.value=PERF_BASE_START;
