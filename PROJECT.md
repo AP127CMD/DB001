@@ -1,8 +1,10 @@
 # AP127 Dashboard — Project Reference
 
-> **Last updated:** 2026-05-20  
-> **Repo:** https://github.com/nuguitar/AP127_NGT_001  
-> **Live site:** deployed via GitHub Pages (URL injected from `RELAY_URL` secret at build time)
+> **Last updated:** 2026-05-21  
+> **Repo:** https://github.com/nuguitar/AP127_NGT_001 (public — admin dashboard)  
+> **Student repo:** https://github.com/nuguitar/AP127_DashboardR1 (private — student-facing site)  
+> **Live admin site:** deployed via GitHub Pages  
+> **Live student site:** https://ap127-dashboardr1.pages.dev (Cloudflare Pages)
 
 ---
 
@@ -23,26 +25,45 @@ Google Sheets (CSV source)
         ▼
    cache.json  (committed to main branch)
         │
-        ▼
-   index.html  ←  GitHub Pages (served as static site)
+        ├──────────────────────────────────────────────────┐
+        ▼                                                  ▼
+   index.html  ←  GitHub Pages (admin dashboard)    push-to-kv.js
+   (internal use only, not linked to students)            │
+                                                          ▼
+                                              Cloudflare KV: ap127_slice
+                                              {ap127, cur127, _updated}
+                                                          │
+                                                          ▼
+                                              Cloudflare Worker: ap127-data-api
+                                              (rate-limited JSON API, CORS-locked)
+                                                          │
+                                                          ▼
+                                              Cloudflare Pages: ap127-dashboardr1
+                                              https://ap127-dashboardr1.pages.dev
+                                              (private GitHub repo: AP127_DashboardR1)
 ```
 
-### Files
+### Files (AP127_NGT_001)
 
 | File | Role | Size |
 |---|---|---|
-| `index.html` | Entire front-end: CSS + HTML + JS in one file | ~1 650 lines |
+| `index.html` | Admin dashboard: CSS + HTML + JS in one file | ~1 745 lines |
+| `student.html` | Student-facing AP127 Detail view (source for private repo) | ~441 lines |
 | `update-cache.js` | Node.js script: fetches CSVs, runs scheduler, writes `cache.json` | ~160 lines |
-| `cache.json` | Pre-computed data cache served to the browser | ~500 KB |
-| `.github/workflows/update-cache.yml` | Scheduled job: refresh data + deploy Pages every 5 min |
-| `.github/workflows/static.yml` | Deploy-only job: triggered on every push to `main` |
+| `push-to-kv.js` | Node.js script: pushes AP127 slice of cache.json to Cloudflare KV | ~37 lines |
+| `cache.json` | Pre-computed data cache | ~500 KB |
+| `.github/workflows/update-cache.yml` | Two-job workflow: data refresh + KV push (any branch) · Pages deploy (main only) |
 
-### Secrets (stored in GitHub repo settings)
+### Secrets (GitHub repo settings — AP127_NGT_001)
 
 | Secret | Used for |
 |---|---|
-| `RELAY_URL` | Google Apps Script web-app URL (injected into `index.html` at build time via `sed`) |
-| `ADMIN_PASSWORD_HASH` | SHA-256 hash of the admin password (injected the same way) |
+| `RELAY_URL` | Google Apps Script web-app URL (injected into `index.html` at build) |
+| `ADMIN_PASSWORD_HASH` | SHA-256 hash of admin password (injected into `index.html`) |
+| `CF_ACCOUNT_ID` | Cloudflare account ID |
+| `CF_KV_NAMESPACE_ID` | KV namespace ID for `AP127_STUDENT_DATA` |
+| `CF_API_TOKEN` | Cloudflare API token with KV write permission |
+| `CF_WORKER_URL` | Data Worker URL (injected into `student.html` at build) |
 
 ---
 
@@ -354,6 +375,7 @@ Push to main
 
 | Date | Commit | Description |
 |---|---|---|
+| 2026-05-21 | (branch) | **feat:** separate student-facing site — `student.html`, `push-to-kv.js`, Cloudflare KV + Worker + Pages pipeline |
 | 2026-05-20 | `ea1ba9e` | **feat:** collapsible "How it Works" panel (details/summary) · hours/day cap mode toggle (scheduler, monthly stats, chart all update) |
 | 2026-05-20 | `340d3d3` | **fix:** schedule starts from tomorrow (Bangkok time); `computeLwM()` initialises eligibility gap from real last-flight date |
 | 2026-05-20 | `340ffb6` | **feat:** simulation explanation panel · Flight Plans footer fix (next lesson date + "Finish:" label) · planning horizon desc updated |
@@ -362,6 +384,53 @@ Push to main
 | 2026-05-11 | `ad29c3a` | **feat:** status bands · capacity page · mobile nav hamburger · timezone fix |
 | 2026-05-10 | `7f5ac65` | chore: automated cache updates |
 | (earlier) | | Chrome cache bypass fix; Node v20→v22; admin password hashing; AP127 pace bands |
+
+---
+
+## 17. Student-Facing Site (added 2026-05-21)
+
+### Overview
+
+A separate student-facing website at `https://ap127-dashboardr1.pages.dev` shows only the AP127 Detail view. Source code is in a **private** GitHub repo (`nuguitar/AP127_DashboardR1`) — not publicly browsable. Data is never sent as a bulk file to student browsers.
+
+### Security model
+
+| Threat | Protection |
+|---|---|
+| Source code visible | Private GitHub repo |
+| `cache.json` bulk download | Never sent to student browsers; only AP127 slice via Worker |
+| Relay URL discoverable | Never in student HTML |
+| CORS scraping | Worker `ALLOWED_ORIGIN` locked to `https://ap127-dashboardr1.pages.dev` |
+
+### New files
+
+**`student.html`** — Standalone student view extracted from `index.html`. Contains:
+- Simplified nav: brand name + status dot only (no tabs)
+- AP127 Detail page only (progress table, timeline, race chart, overall chart, drawer)
+- `const WORKER_URL='__WORKER_URL__';` — placeholder injected at deploy via `CF_WORKER_URL` secret
+- Init IIFE: fetches from Worker if URL is set, else falls back to `cache.json` (local dev only)
+
+**`push-to-kv.js`** — Reads `cache.json`, extracts `{ap127, cur127, _updated}`, PUTs to Cloudflare KV key `ap127_slice`. Skips gracefully (exit 0) if CF secrets not configured.
+
+### Cloudflare resources
+
+| Resource | Details |
+|---|---|
+| KV Namespace | `AP127_STUDENT_DATA` — key: `ap127_slice` |
+| Worker | `ap127-data-api` — serves KV data as JSON; env var `ALLOWED_ORIGIN` controls CORS |
+| Pages project | `ap127-dashboardr1` — deploys from `nuguitar/AP127_DashboardR1` (private) on every push to `main` |
+
+### GitHub Actions changes (update-cache.yml)
+
+Split into two jobs to avoid GitHub Pages environment protection errors on non-main branches:
+- **`update` job** — no `environment:` declaration; runs on any branch. Steps: fetch data, commit cache.json, push KV, inject secrets (main only), upload Pages artifact (main only).
+- **`deploy` job** — `needs: update`, `if: github.ref == 'refs/heads/main'`, has `environment: github-pages`. Only runs `actions/deploy-pages@v5`.
+
+### Pending (as of 2026-05-21)
+
+1. Edit `AP127_DashboardR1/index.html` — replace `const WORKER_URL='__WORKER_URL__';` with the actual data Worker URL (e.g. `https://ap127-data-api.anusorn-tanmetha.workers.dev`). Commit → Cloudflare Pages auto-redeploys.
+2. Set `ALLOWED_ORIGIN` = `https://ap127-dashboardr1.pages.dev` on the `ap127-data-api` Worker in Cloudflare dashboard.
+3. Merge branch `claude/separate-homepage-website-CkBWy` to `main` after verification.
 
 ---
 
