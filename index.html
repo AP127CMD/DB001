@@ -766,7 +766,7 @@ function parseCSV(text,batch){
   const pN=rows[0].slice(3),pFT=rows[1].slice(3),pD=rows[2].slice(3);
   const curriculum=[];
   pN.forEach((name,i)=>{
-    if(!name||/\/\d+$/.test(name))return;
+    if(!name||/\/\d+$/.test(name)||/^AUPRT/i.test(name))return;
     let pm=0;const ft=(pFT[i]||"");
     if(ft.includes(":")){const[h,m]=ft.split(":").map(Number);pm=(h||0)*60+(m||0);}
     curriculum.push({lesson:name,planned_mins:pm,planned_date:parseDate(pD[i]||"")});
@@ -781,7 +781,7 @@ function parseCSV(text,batch){
     const lH=rA.slice(3),ftC=rB.slice(3),dtC=rC.slice(3);
     const flown=[];
     lH.forEach((ln,j)=>{
-      if(!ln||/\/\d+$/.test(ln))return;
+      if(!ln||/\/\d+$/.test(ln)||/^AUPRT/i.test(ln))return;
       const ft=(ftC[j]||"").trim();if(!ft||!ft.includes(":"))return;
       const[h,m]=ft.split(":").map(Number);
       flown.push({lesson:ln,actual_ft:ft,actual_mins:(h||0)*60+(m||0),date:parseDate(dtC[j]||"")});
