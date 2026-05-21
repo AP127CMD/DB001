@@ -133,25 +133,26 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 
 ---
 
-## ⚠️ Pending Tasks (as of 2026-05-21)
+## Pending Tasks (as of 2026-05-21)
 
-1. **Fix `WORKER_URL` in `AP127_DashboardR1/index.html`**
-   - Edit the file in github.com/nuguitar/AP127_DashboardR1
-   - Replace `const WORKER_URL='__WORKER_URL__';` with the actual data Worker URL
-   - Cloudflare Pages auto-redeploys on commit
-   - Student site at `https://ap127-dashboardr1.pages.dev` currently shows red dot / no data
-
-2. **Set `ALLOWED_ORIGIN` on the data Worker**
-   - Cloudflare dashboard → Workers & Pages → `ap127-data-api` → Settings → Variables
-   - Set `ALLOWED_ORIGIN` = `https://ap127-dashboardr1.pages.dev`
-   - Without this, CORS will block the Pages site from calling the Worker
-
-3. **(Optional) Merge feature branch to main**
+1. **(Optional) Merge feature branch to main**
    - Branch `claude/separate-homepage-website-CkBWy` contains: `student.html`, `push-to-kv.js`, updated `update-cache.yml`
    - Review and merge to `main` when ready
 
-4. **(Optional) Add Cloudflare WAF rate limiting**
+2. **(Optional) Add Cloudflare WAF rate limiting**
    - Cloudflare dashboard → Security → WAF → Rate Limiting Rules on the data Worker route
+
+### ✅ Completed (2026-05-21)
+
+- `student.html` extracted from `index.html` — AP127 Detail view only, no admin/relay/secrets
+- `push-to-kv.js` created — pushes `{ap127, cur127, _updated}` slice to Cloudflare KV on every cache update
+- `update-cache.yml` split into two jobs — avoids GitHub Pages environment protection errors on non-main branches
+- Cloudflare KV namespace `AP127_STUDENT_DATA` created, key `ap127_slice` populated
+- Cloudflare Worker `ap127-data-api` deployed — serves KV data as JSON with CORS
+- Cloudflare Pages project `ap127-dashboardr1` deployed from private repo `nuguitar/AP127_DashboardR1`
+- `WORKER_URL` hardcoded in `AP127_DashboardR1/index.html` (data Worker URL)
+- `ALLOWED_ORIGIN` set on `ap127-data-api` Worker → `https://ap127-dashboardr1.pages.dev`
+- Student site live and serving data at `https://ap127-dashboardr1.pages.dev`
 
 ---
 
