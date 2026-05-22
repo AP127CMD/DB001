@@ -140,6 +140,8 @@ _updated    – ISO timestamp of last cache write
 { "lesson": "CDGL 01", "planned_mins": 60, "planned_date": "2026-03-31" }
 ```
 
+> **AUPRT exclusion:** Any lesson or flown entry whose name matches `/^AUPRT/i` is silently dropped inside `parseCSV()` in both `index.html` and `update-cache.js`. This means `total`, `done`, `pct`, `remaining`, `finish`, and all scheduler projections never include AUPRT lessons.
+
 ---
 
 ## 5. Batches
@@ -162,6 +164,8 @@ AP127_NICKS = ["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN",
 ---
 
 ## 6. Scheduler (`runScheduler` in both files)
+
+> **Note:** Lessons whose name starts with `AUPRT` (case-insensitive) are excluded at the `parseCSV` stage and never reach the scheduler or any view. See §4 Data Model note.
 
 **Signature:** `runScheduler(batchData, curricula, extraBatches=[], startDate="", hourMode=false)`
 
@@ -375,6 +379,8 @@ Push to main
 
 | Date | Commit | Description |
 |---|---|---|
+| 2026-05-22 | — | **feat:** AP127 Detail table overhaul — short name format, FI column, Progress + HRS DONE restored, IDLE color coding, 12-column reorder, mobile updated |
+| 2026-05-21 | `e68d967` | **feat:** exclude AUPRT lessons from all calculations and views — filtered at `parseCSV()` in both files |
 | 2026-05-21 | (branch) | **feat:** separate student-facing site — `student.html`, `push-to-kv.js`, Cloudflare KV + Worker + Pages pipeline |
 | 2026-05-20 | `ea1ba9e` | **feat:** collapsible "How it Works" panel (details/summary) · hours/day cap mode toggle (scheduler, monthly stats, chart all update) |
 | 2026-05-20 | `340d3d3` | **fix:** schedule starts from tomorrow (Bangkok time); `computeLwM()` initialises eligibility gap from real last-flight date |
@@ -412,6 +418,10 @@ A separate student-facing website at `https://ap127-dashboardr1.pages.dev` shows
 
 **`push-to-kv.js`** — Reads `cache.json`, extracts `{ap127, cur127, _updated}`, PUTs to Cloudflare KV key `ap127_slice`. Skips gracefully (exit 0) if CF secrets not configured.
 
+**`build-student.js`** — Extracts the 5 `##AP127*##` marked sections from `index.html` and patches them into `student.html`. Run by GitHub Actions before every commit, keeping both sites in sync automatically.
+
+**`sync-dashboardr1.js`** — Pushes `student.html` (with `WORKER_URL` injected) to `AP127_DashboardR1/index.html` via GitHub API on every push to `main`.
+
 ### Cloudflare resources
 
 | Resource | Details |
@@ -423,29 +433,31 @@ A separate student-facing website at `https://ap127-dashboardr1.pages.dev` shows
 ### GitHub Actions changes (update-cache.yml)
 
 Split into two jobs to avoid GitHub Pages environment protection errors on non-main branches:
-- **`update` job** — no `environment:` declaration; runs on any branch. Steps: fetch data, commit cache.json, push KV, inject secrets (main only), upload Pages artifact (main only).
+- **`update` job** — no `environment:` declaration; runs on any branch. Steps: fetch data, run `build-student.js`, commit `cache.json + student.html`, push KV, sync DashboardR1 (main only), inject secrets (main only), upload Pages artifact (main only).
 - **`deploy` job** — `needs: update`, `if: github.ref == 'refs/heads/main'`, has `environment: github-pages`. Only runs `actions/deploy-pages@v5`.
-
-### Pending (as of 2026-05-21)
-
-1. Edit `AP127_DashboardR1/index.html` — replace `const WORKER_URL='__WORKER_URL__';` with the actual data Worker URL (e.g. `https://ap127-data-api.anusorn-tanmetha.workers.dev`). Commit → Cloudflare Pages auto-redeploys.
-2. Set `ALLOWED_ORIGIN` = `https://ap127-dashboardr1.pages.dev` on the `ap127-data-api` Worker in Cloudflare dashboard.
-3. Merge branch `claude/separate-homepage-website-CkBWy` to `main` after verification.
 
 ---
 
-## 14. AP127 Detail Page Improvements (2026-05-19)
+## 14. AP127 Detail Page Improvements (2026-05-19 · updated 2026-05-22)
 
 ### Student Ranking Table
-- **Call Sign column:** Moved call sign (e.g., A-RUT) from secondary display below name to dedicated column for clearer identification
-- **IDLE(days) column:** Shows number of days since student's last flight to current date
-- **Hours calculation:** Changed from actual flight time to planned curriculum time per completed lesson (more accurate for planning)
-- **DAY delta column:** 
-  - Replaces "Plan Delta" with focus on last lesson date vs. plan
-  - Calculates: current date minus planned date of last completed lesson
-  - Positive = delay (shown in red), negative = ahead (shown in green)
-  - Example: If last lesson CDGL 02 has plan date 2026-05-09 and today is 2026-05-19, shows +10 days (delay) in red
-- **Last FLT column:** Renamed from "Last Date" for clarity (shows date of last completed flight)
+
+**Column order:** RANK · NAME · CALL SIGN · FI · Progress · HRS DONE · LESSON DONE · LAST LESSON · LAST FLT · IDLE (DAYS) · DAY DELTA · HRS DELTA
+
+- **NAME format:** First name + first letter of last name + dot (e.g. "Akaravit K.") via `ap127ShortName()`
+- **CATC ID column:** Removed
+- **FI column:** Flight Instructor call sign per student — hardcoded in `AP127_FI[]` array (index-matched to `AP127_NICKS[]`). Assigned to `s.fi` at all same spots as `s.nick`.
+- **Progress column:** Progress bar + percentage, placed after FI
+- **HRS DONE column:** Planned curriculum hours for completed lessons (was "Hours"), 2-line header
+- **LESSON DONE column:** Count of completed lessons (was "Done"), 2-line header
+- **IDLE (DAYS) column:** Days since student's last flight; 2-line header. Color coded:
+  - 1–2 days: white (`--tx`)
+  - 3–5 days: yellow (`#fbbf24`)
+  - 6–10 days: red (`#ff6b6b`)
+  - >10 days: red text + white background (`rgba(255,255,255,0.85)`)
+- **DAY delta column:** Current date minus planned date of last completed lesson. Positive = delay (red), negative = ahead (green)
+- **Last FLT column:** Date of last completed flight
+- **Mobile:** Hides FI (col 4) and LAST LESSON (col 8)
 
 ### Flight Timeline vs Progress
 - **Connecting lines:** Lines now connect dots for each student to visualize flight progression over time
