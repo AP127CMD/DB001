@@ -15,7 +15,8 @@
 
 ## Active Branch
 
-Working on `main` directly for dashboard UI changes.
+Feature branch `claude/separate-homepage-website-CkBWy` has been merged to `main` (PR #1 and PR #2).
+New work goes directly to `main`.
 
 ---
 
@@ -71,7 +72,7 @@ Google Sheets → Apps Script relay → update-cache.js (GitHub Actions, every 5
 | `/* ##AP127CSS_START## */` … `/* ##AP127CSS_END## */` | All `.d127-*` CSS classes |
 | `<!-- ##AP127PAGE_START## -->` … `<!-- ##AP127PAGE_END## -->` | Entire `#page-ap127detail` HTML |
 | `<!-- ##AP127DRAWER_START## -->` … `<!-- ##AP127DRAWER_END## -->` | Toast + drawer overlay HTML |
-| `// ##AP127NICKS_START##` … `// ##AP127NICKS_END##` | `AP127_NICKS`, `AP127_FI`, `AP127_SE` and `HOL` constants |
+| `// ##AP127NICKS_START##` … `// ##AP127NICKS_END##` | `AP127_NICKS`, `AP127_FI`, `AP127_SE`, `HOL` constants (index-matched per-student arrays) |
 | `// ##AP127JS_START##` … `// ##AP127JS_END##` | All `ap127*` helper + render + chart functions |
 
 ### Workflow (automatic on every push to `main`)
@@ -95,6 +96,28 @@ When making changes to the AP127 Detail view:
 - **Do not manually edit the marked sections in `student.html`** — they will be overwritten on next run
 
 Sections outside the markers in `student.html` (nav, `WORKER_URL`, global vars, init IIFE) are student-specific and are never overwritten.
+
+### ⚠️ Critical rule — no duplicate variable declarations
+
+`student.html` has student-specific `let`/`const` declarations in the section before the markers. The `##AP127JS_START##` section (synced from `index.html`) also contains top-level `let`/`const` declarations (e.g. `AP127_RACE_SOLO`). **Never declare the same variable in both places** — duplicate `let` is a `SyntaxError` that silently breaks the entire page (stuck on "Loading..." forever).
+
+**Currently declared inside `##AP127JS_START##` (do NOT re-declare in student-specific section):**
+- `let AP127_RACE_SOLO`
+
+**Declared in student-specific section only (safe, not inside any markers):**
+- `let G`, `const CHARTS`, `let AP127_VIEW_ROWS`, `let tmr`
+
+**Init IIFE (`student.html` only — never overwritten)** must assign all per-student index-matched arrays:
+```javascript
+data.ap127?.forEach((s,i)=>{
+  s.nick = AP127_NICKS[i] || "";
+  s.fi   = AP127_FI[i]   || "";
+  s.se   = AP127_SE[i]   || "";
+  // add new arrays here when index.html gains new AP127_* arrays in ##AP127NICKS_START##
+});
+```
+
+If a new `AP127_*` constant is added inside `##AP127NICKS_START##` in `index.html`, also add its assignment (`s.xxx = AP127_XXX[i] || ""`) to the init IIFE in `student.html`.
 
 ---
 
@@ -181,15 +204,18 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 
 ## Pending Tasks (as of 2026-05-22)
 
-1. **Add `GH_PAT_DASHBOARDR1` secret** to `AP127_NGT_001` repo — without this, `sync-dashboardr1.js` skips silently and `AP127_DashboardR1` won't auto-update. (See creation steps in GitHub Secrets section above.)
+1. **(Optional) Add Cloudflare WAF rate limiting** — Cloudflare dashboard → Security → WAF → Rate Limiting Rules on the data Worker route.
 
 2. **(Optional) Add Cloudflare WAF rate limiting** — Cloudflare dashboard → Security → WAF → Rate Limiting Rules on the data Worker route.
 
 ### ✅ Completed (2026-05-22)
 
+- **Fixed "stuck on Loading" bug** — duplicate `let AP127_RACE_SOLO` declaration caused a `SyntaxError` that prevented all JS from running on the student site. Removed the duplicate from `student.html`'s student-specific section (the synced `##AP127JS_START##` section already declares it). (PR #2)
+- **Fixed `s.se` not assigned** — init IIFE in `student.html` now assigns `s.se = AP127_SE[i] || ""` so SE TYPE column renders correctly
 - **SE TYPE column** added to AP127 Progress Ranking table — `AP127_SE` array (28 entries), colour-coded DA40-TDI (orange) / DA40-CS (blue), bold
 - **Mobile: all columns visible** — removed all `nth-child` `display:none` rules from both `index.html` and `student.html`; table `min-width` updated to 900px; progress bar narrowed to 36px
 - **Table header polish** — IDLE DAYS, Last Lesson split to 2-line headers; progress bar width reduced desktop 82→57px
+- Feature branch `claude/separate-homepage-website-CkBWy` fully merged to `main` (PR #1 + PR #2)
 
 ### ✅ Completed (2026-05-21)
 
@@ -199,7 +225,7 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 - Cloudflare KV namespace `AP127_STUDENT_DATA` created, key `ap127_slice` populated
 - Cloudflare Worker `ap127-data-api` deployed — serves KV data as JSON with CORS
 - Cloudflare Pages project `ap127-dashboardr1` deployed from private repo `nuguitar/AP127_DashboardR1`
-- `WORKER_URL` hardcoded in `AP127_DashboardR1/index.html` (data Worker URL set by `sync-dashboardr1.js`)
+- `WORKER_URL` set in `AP127_DashboardR1/index.html` via `sync-dashboardr1.js` + `GH_PAT_DASHBOARDR1` secret
 - `ALLOWED_ORIGIN` set on `ap127-data-api` Worker → `https://ap127-dashboardr1.pages.dev`
 - Student site live and serving data at `https://ap127-dashboardr1.pages.dev`
 - `##AP127*##` sync markers added to `index.html` and `student.html`
