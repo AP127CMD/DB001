@@ -130,7 +130,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
         <div class="d127-h"><span class="d127-t">Progress Ranking</span><span class="d127-s" id="d127-asof">As of -</span></div>
         <div class="d127-table-wrap">
           <table class="d127-table">
-            <thead><tr><th>Rank</th><th>Name</th><th>Call Sign</th><th>FI</th><th>Progress</th><th>HRS<br>DONE</th><th>LESSON<br>DONE</th><th>Last<br>Lesson</th><th>Last FLT</th><th>IDLE<br>DAYS</th><th>DAY<br>Delta</th><th>HRS<br>Delta</th></tr></thead>
+            <thead><tr><th>Rank</th><th>Name</th><th>Call Sign</th><th>SE<br>TYPE</th><th>FI</th><th>Progress</th><th>HRS<br>DONE</th><th>LESSON<br>DONE</th><th>Last<br>Lesson</th><th>Last FLT</th><th>IDLE<br>DAYS</th><th>DAY<br>Delta</th><th>HRS<br>Delta</th></tr></thead>
             <tbody id="d127-rows"></tbody>
           </table>
         </div>
@@ -197,6 +197,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 // ##AP127NICKS_START##
 const AP127_NICKS=["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN","K-SEE","KRIT","M-PHAN","N-PON","N-KALP","N-PHAT","P-THAN","P-KORN","P-KUL","P-DET","S-SIT","S-KORN","S-WITCH","S-WAN","T-KORN","T-WAJ","V-PHON","W-PHOL","W-POL","W-PONG"];
 const AP127_FI=["W-CHAI","P-YUTH","P-YA","S-TI","N-TORN","I-PON","SN-TI","S-TI","A-WAT","W-NU","K-POL","C-CHAI","P-YUTH","SN-TI","E-PHOB","K-POL","S-WAN","N-TORN","E-PHOB","I-PON","K-CHAI","K-CHAI","P-YA","S-WAN","C-CHAI","W-NU","W-CHAI","A-WAT"];
+const AP127_SE=["DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-TDI"];
 const HOL=new Set(["2026-05-01","2026-05-04","2026-05-13","2026-06-01","2026-06-03","2026-07-28","2026-07-29","2026-07-30","2026-08-12","2026-10-13","2026-10-23","2026-12-07","2026-12-10","2026-12-31"]);
 // ##AP127NICKS_END##
 
@@ -302,7 +303,7 @@ function renderAP127Detail(){
     const dayDeltaColor=dayDelta===null?"":dayDelta>0?"#ff6b6b":"#51cf66";
     const rankColor=getBandColor(s.done||0);
     const last=(s.flown||[]).at(-1)||{};
-    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td><div class="d127-name">${ap127ShortName(s.name)}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono">${s.fi||"-"}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${s.done||0}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td><td class="d127-mono" style="${idleStyle}">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td></tr>`;
+    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td><div class="d127-name">${ap127ShortName(s.name)}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono" style="color:${s.se==="DA40-TDI"?"#fb923c":"#38bdf8"};font-weight:600">${s.se||"-"}</td><td class="d127-mono">${s.fi||"-"}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${s.done||0}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td><td class="d127-mono" style="${idleStyle}">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td></tr>`;
   }).join("");
   const bandDefs=[
     {label:"AHEAD", lo:aheadLo,   hi:leaderDone, c:"#7be9b8"},
