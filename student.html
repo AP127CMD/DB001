@@ -208,7 +208,6 @@ const WORKER_URL='__WORKER_URL__';
 let G=null;
 const CHARTS={};
 let AP127_VIEW_ROWS=[];
-let AP127_RACE_SOLO=null;
 let tmr=null;
 
 function escHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
@@ -538,7 +537,7 @@ function buildAP127OverallChart(all,curriculum,maxDate){
       if(r.ok)data=await r.json();
     }
   }catch(e){console.warn('Data fetch failed',e);}
-  data.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";s.fi=AP127_FI[i]||"";});
+  data.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";s.fi=AP127_FI[i]||"";s.se=AP127_SE[i]||"";});
   G=data;
   renderAP127Detail();
   const upd=G._updated?new Date(G._updated).toLocaleString("en-GB",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
