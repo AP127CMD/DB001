@@ -154,6 +154,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .toast.ok{border-left:3px solid var(--done);color:var(--done);}
 .toast.er{border-left:3px solid #ef4444;color:#ef4444;}
 .toast.wa{border-left:3px solid var(--acc);color:var(--acc);}
+/* ##AP127CSS_START## */
 /* AP127 DETAIL */
 .d127-wrap{display:grid;gap:10px;}
 .d127-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
@@ -215,6 +216,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .d127-ll{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx);}
 .d127-ld{margin-left:auto;font-size:9px;color:var(--tx2);}
 .d127-note{font-size:10px;color:var(--tx3);margin-bottom:8px;}
+/* ##AP127CSS_END## */
 .pr-list{display:flex;flex-direction:column;gap:6px;padding:10px 12px;}
 .pr-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);}
 .pr-row:last-child{border:none;}
@@ -507,6 +509,7 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
   </div>
 </div>
 
+<!-- ##AP127PAGE_START## -->
 <div id="page-ap127detail" class="page active">
   <div class="d127-wrap">
     <div class="d127-kpis">
@@ -576,6 +579,7 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
     </div>
   </div>
 </div>
+<!-- ##AP127PAGE_END## -->
 
 <div id="page-admin" class="page admp">
   <!-- APPS SCRIPT SETUP -->
@@ -645,6 +649,7 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
   </div>
 </div>
 
+<!-- ##AP127DRAWER_START## -->
 <div class="toast" id="toast"></div>
 <div class="d127-draw-ov" id="d127-draw-ov" onclick="closeAP127Drawer()">
   <div class="d127-draw" onclick="event.stopPropagation()">
@@ -658,12 +663,15 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
     </div>
   </div>
 </div>
+<!-- ##AP127DRAWER_END## -->
 
 <script>
 // cache.json loaded async
+// ##AP127NICKS_START##
 const AP127_NICKS=["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN","K-SEE","KRIT","M-PHAN","N-PON","N-KALP","N-PHAT","P-THAN","P-KORN","P-KUL","P-DET","S-SIT","S-KORN","S-WITCH","S-WAN","T-KORN","T-WAJ","V-PHON","W-PHOL","W-POL","W-PONG"];
 const AP127_FI=["W-CHAI","P-YUTH","P-YA","S-TI","N-TORN","I-PON","SN-TI","S-TI","A-WAT","W-NU","K-POL","C-CHAI","P-YUTH","SN-TI","E-PHOB","K-POL","S-WAN","N-TORN","E-PHOB","I-PON","K-CHAI","K-CHAI","P-YA","S-WAN","C-CHAI","W-NU","W-CHAI","A-WAT"];
 const HOL=new Set(["2026-05-01","2026-05-04","2026-05-13","2026-06-01","2026-06-03","2026-07-28","2026-07-29","2026-07-30","2026-08-12","2026-10-13","2026-10-23","2026-12-07","2026-12-10","2026-12-31"]);
+// ##AP127NICKS_END##
 const BC={AP124:"#c084fc",AP126:"#38bdf8",AP127:"#fb923c",AP129:"#4ade80"};
 const BB={AP124:"rgba(192,132,252,.12)",AP126:"rgba(56,189,248,.12)",AP127:"rgba(251,146,60,.12)",AP129:"rgba(74,222,128,.12)"};
 
@@ -1200,6 +1208,7 @@ function renderPlans(){
   document.getElementById("pc").textContent=arr.length+" students";
 }
 
+// ##AP127JS_START##
 // ── AP127 DETAIL ──
 function ap127ShortName(n){const p=n.trim().split(/\s+/);return p.length<2?n:p[0]+" "+p[p.length-1][0]+".";}
 function ap127FmtDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}catch{return ds;}}
@@ -1503,6 +1512,7 @@ function buildAP127OverallChart(all,curriculum,maxDate){
     }
   });
 }
+// ##AP127JS_END##
 
 function collectHistoricalFlights(){
   const rec=[];
