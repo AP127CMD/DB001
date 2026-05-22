@@ -15,8 +15,7 @@
 
 ## Active Branch
 
-Current feature branch: `claude/separate-homepage-website-CkBWy`
-All new work goes here — **do not push to `main`** without user confirmation.
+Working on `main` directly for dashboard UI changes.
 
 ---
 
@@ -72,7 +71,7 @@ Google Sheets → Apps Script relay → update-cache.js (GitHub Actions, every 5
 | `/* ##AP127CSS_START## */` … `/* ##AP127CSS_END## */` | All `.d127-*` CSS classes |
 | `<!-- ##AP127PAGE_START## -->` … `<!-- ##AP127PAGE_END## -->` | Entire `#page-ap127detail` HTML |
 | `<!-- ##AP127DRAWER_START## -->` … `<!-- ##AP127DRAWER_END## -->` | Toast + drawer overlay HTML |
-| `// ##AP127NICKS_START##` … `// ##AP127NICKS_END##` | `AP127_NICKS` and `HOL` constants |
+| `// ##AP127NICKS_START##` … `// ##AP127NICKS_END##` | `AP127_NICKS`, `AP127_FI`, `AP127_SE` and `HOL` constants |
 | `// ##AP127JS_START##` … `// ##AP127JS_END##` | All `ap127*` helper + render + chart functions |
 
 ### Workflow (automatic on every push to `main`)
@@ -180,13 +179,17 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 
 ---
 
-## Pending Tasks (as of 2026-05-21)
+## Pending Tasks (as of 2026-05-22)
 
 1. **Add `GH_PAT_DASHBOARDR1` secret** to `AP127_NGT_001` repo — without this, `sync-dashboardr1.js` skips silently and `AP127_DashboardR1` won't auto-update. (See creation steps in GitHub Secrets section above.)
 
-2. **(Optional) Merge feature branch to main** — branch `claude/separate-homepage-website-CkBWy` is ready. Review and merge when ready.
+2. **(Optional) Add Cloudflare WAF rate limiting** — Cloudflare dashboard → Security → WAF → Rate Limiting Rules on the data Worker route.
 
-3. **(Optional) Add Cloudflare WAF rate limiting** — Cloudflare dashboard → Security → WAF → Rate Limiting Rules on the data Worker route.
+### ✅ Completed (2026-05-22)
+
+- **SE TYPE column** added to AP127 Progress Ranking table — `AP127_SE` array (28 entries), colour-coded DA40-TDI (orange) / DA40-CS (blue), bold
+- **Mobile: all columns visible** — removed all `nth-child` `display:none` rules from both `index.html` and `student.html`; table `min-width` updated to 900px; progress bar narrowed to 36px
+- **Table header polish** — IDLE DAYS, Last Lesson split to 2-line headers; progress bar width reduced desktop 82→57px
 
 ### ✅ Completed (2026-05-21)
 
@@ -201,12 +204,13 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 - Student site live and serving data at `https://ap127-dashboardr1.pages.dev`
 - `##AP127*##` sync markers added to `index.html` and `student.html`
 - `build-student.js` + `sync-dashboardr1.js` created — both sites stay in sync automatically on every push to `main`
+- Feature branch `claude/separate-homepage-website-CkBWy` merged to `main`
 
 ---
 
 ## `student.html` — What Was Kept / Removed vs `index.html`
 
-**Synced automatically (via markers):** AP127_NICKS, HOL constants; all `.d127-*` CSS; `#page-ap127detail` HTML; toast + drawer HTML; all `ap127*` render/helper/chart functions
+**Synced automatically (via markers):** `AP127_NICKS`, `AP127_FI`, `AP127_SE`, `HOL` constants; all `.d127-*` CSS; `#page-ap127detail` HTML; toast + drawer HTML; all `ap127*` render/helper/chart functions
 
 **Student-only (never overwritten):** simplified nav (brand + status dot); `WORKER_URL` constant; global state vars; `escHtml`, `toast`, `setSS`, `fd`, `hm`, `mkC`, `copts` utilities; init IIFE (fetches from Worker)
 
@@ -220,6 +224,6 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 
 Cloudflare KV stores only: `{ ap127, cur127, _updated }` (the "ap127_slice")
 
-Student record fields: `catc_id`, `name`, `batch`, `nick` (assigned in JS), `done`, `total`, `remaining`, `pct`, `flown[]`, `planned[]`, `next_lesson`, `finish`
+Student record fields: `catc_id`, `name`, `batch`, `nick`, `fi`, `se` (all three assigned in JS from parallel arrays), `done`, `total`, `remaining`, `pct`, `flown[]`, `planned[]`, `next_lesson`, `finish`
 
 See `PROJECT.md` for full details.
