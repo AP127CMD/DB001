@@ -244,6 +244,9 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .sim-ctrl-desc{font-size:10px;color:var(--tx3);margin-bottom:7px;line-height:1.4;}
 .sim-ctrl-val{display:flex;align-items:center;gap:8px;}
 .sim-ctrl-val input[type=range]{flex:1;accent-color:var(--c127);}
+.sim-sp-chip{display:inline-flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--bd2);border-radius:5px;padding:4px 8px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx2);user-select:none;}
+.sim-sp-chip input{accent-color:var(--c127);cursor:pointer;width:11px;height:11px;}
+.sim-sp-chip:has(input:checked){border-color:var(--c127);color:var(--c127);background:rgba(251,146,60,.08);}
 .sim-ctrl-val input[type=text]{background:var(--s3);border:1px solid var(--bd);color:var(--tx);border-radius:4px;padding:4px 7px;font-size:12px;font-family:'Nunito',sans-serif;outline:none;width:100%;}
 .sim-ctrl-val input[type=text]:focus{border-color:var(--c127);}
 .sim-rv{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c127);min-width:36px;text-align:center;}
@@ -441,7 +444,26 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
             <span style="font-size:10px;color:var(--tx3)">days</span>
           </div>
         </div>
+        <div class="sim-ctrl-item">
+          <div class="sim-ctrl-lbl">Flight Duration</div>
+          <div class="sim-ctrl-desc">Lesson length threshold — flights ≥ this require a 2-day gap</div>
+          <div class="sim-ctrl-val">
+            <input type="range" id="sim-dur" min="60" max="300" step="15" value="120" oninput="document.getElementById('sim-dur-v').textContent=fmtSimDur(+this.value)">
+            <span class="sim-rv" id="sim-dur-v">2h 00m</span>
+          </div>
+        </div>
+        <div class="sim-ctrl-item">
+          <div class="sim-ctrl-lbl">Buffer</div>
+          <div class="sim-ctrl-desc">Turnaround time per flight added to hour-mode cost</div>
+          <div class="sim-ctrl-val">
+            <input type="range" id="sim-buf" min="0" max="60" step="5" value="30" oninput="document.getElementById('sim-buf-v').textContent=this.value+'min'">
+            <span class="sim-rv" id="sim-buf-v">30min</span>
+          </div>
+        </div>
       </div>
+      <div class="sim-ctrl-title" style="margin-top:4px">Student Priority — AP127</div>
+      <div style="font-size:10px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Select students to include in the simulation. Sorted A–Z. Uncheck to exclude.</div>
+      <div id="sim-sp-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
       <div class="sim-ctrl-title" style="margin-top:4px">Additional Batches</div>
       <div style="font-size:10px;color:var(--tx3);margin-bottom:10px;line-height:1.5">All additional batches use the AP127 curriculum (101 lessons). Priority after AP129.</div>
       <div id="sim-extra-list" class="sim-extra-list"></div>
@@ -469,7 +491,7 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
         </div>
         <div class="sim-info-item">
           <div class="sim-info-lbl">Student eligibility</div>
-          <div class="sim-info-val">Must wait <b>1 workday</b> after a lesson &lt; 120 min · <b>2 workdays</b> after a lesson ≥ 120 min (2 hr+). Within a batch, the student furthest behind their plan fills next.</div>
+          <div class="sim-info-val">Must wait <b>1 workday</b> after a lesson below the Duration threshold · <b>2 workdays</b> after a lesson at or above it. Within a batch, the student furthest behind their plan fills next.</div>
         </div>
         <div class="sim-info-item">
           <div class="sim-info-lbl">Workdays</div>
@@ -808,7 +830,7 @@ function parseCSV(text,batch){
 function isWD(ds){const d=new Date(ds+"T12:00:00Z"),dw=d.getUTCDay();return dw!==0&&dw!==6&&!HOL.has(ds);}
 function getWDs(s,n){const a=[];let d=new Date(s+"T12:00:00Z");while(a.length<n){const ds=d.toISOString().slice(0,10);if(isWD(ds))a.push(ds);d.setUTCDate(d.getUTCDate()+1);}return a;}
 
-function runScheduler(batchData,curricula,extraBatches=[],startDate="",hourMode=false){
+function runScheduler(batchData,curricula,extraBatches=[],startDate="",hourMode=false,simDur=120,simBuf=0){
   const{cap,n129,ap129start,horizon}=CFG;
   const wds=getWDs(startDate||"2026-05-05",horizon);
   const w129=wds.findIndex(d=>d>=ap129start);
@@ -837,20 +859,20 @@ function runScheduler(batchData,curricula,extraBatches=[],startDate="",hourMode=
   const wExtra=extraBatches.map(b=>{const i=wds.findIndex(d=>d>=(b.start||"9999"));return i<0?wds.length:i;});
   function elig(b,cur,wi,overN){
     const tot=cur.length,wl=Math.max(horizon-wi,1),n=overN!==undefined?overN:(b==="AP129"?n129:(batchData[b]||[]).length),out=[];
-    for(let i=0;i<n;i++){if(iM[b][i]>=tot)continue;const gap=lmM[b][i]>=120?2:1;if((wi-lwM[b][i])<gap)continue;out.push([(tot-iM[b][i])/wl,i]);}
+    for(let i=0;i<n;i++){if(iM[b][i]>=tot)continue;const gap=lmM[b][i]>=simDur?2:1;if((wi-lwM[b][i])<gap)continue;out.push([(tot-iM[b][i])/wl,i]);}
     return out.sort((a,z)=>z[0]-a[0]);
   }
   wds.forEach((ds,wi)=>{
     let slots=cap;
     ["AP124","AP126","AP127"].forEach(b=>{
       if(slots<=0)return;const cur=curricula[b]||[];
-      for(const[,i]of elig(b,cur,wi)){if(slots<=0)break;const ix=iM[b][i];if(ix>=cur.length)continue;const p=cur[ix];const cost=hourMode?p.planned_mins/60:1;if(slots<cost)continue;schM[b][i].push([ds,p.lesson,p.planned_mins]);lwM[b][i]=wi;lmM[b][i]=p.planned_mins;iM[b][i]=ix+1;slots-=cost;}
+      for(const[,i]of elig(b,cur,wi)){if(slots<=0)break;const ix=iM[b][i];if(ix>=cur.length)continue;const p=cur[ix];const cost=hourMode?(p.planned_mins+simBuf)/60:1;if(slots<cost)continue;schM[b][i].push([ds,p.lesson,p.planned_mins]);lwM[b][i]=wi;lmM[b][i]=p.planned_mins;iM[b][i]=ix+1;slots-=cost;}
     });
-    if(slots>0&&wi>=w129)for(const[,i]of elig("AP129",cur129,wi)){if(slots<=0)break;const ix=iM.AP129[i];if(ix>=cur129.length)continue;const p=cur129[ix];const cost=hourMode?p.planned_mins/60:1;if(slots<cost)continue;schM.AP129[i].push([ds,p.lesson,p.planned_mins]);lwM.AP129[i]=wi;lmM.AP129[i]=p.planned_mins;iM.AP129[i]=ix+1;slots-=cost;}
+    if(slots>0&&wi>=w129)for(const[,i]of elig("AP129",cur129,wi)){if(slots<=0)break;const ix=iM.AP129[i];if(ix>=cur129.length)continue;const p=cur129[ix];const cost=hourMode?(p.planned_mins+simBuf)/60:1;if(slots<cost)continue;schM.AP129[i].push([ds,p.lesson,p.planned_mins]);lwM.AP129[i]=wi;lmM.AP129[i]=p.planned_mins;iM.AP129[i]=ix+1;slots-=cost;}
     extraBatches.forEach((b,bi)=>{
       if(slots<=0||wi<wExtra[bi])return;
       const k=b.name;
-      for(const[,i]of elig(k,cur129,wi,b.n)){if(slots<=0)break;const ix=iM[k][i];if(ix>=cur129.length)continue;const p=cur129[ix];const cost=hourMode?p.planned_mins/60:1;if(slots<cost)continue;schM[k][i].push([ds,p.lesson,p.planned_mins]);lwM[k][i]=wi;lmM[k][i]=p.planned_mins;iM[k][i]=ix+1;slots-=cost;}
+      for(const[,i]of elig(k,cur129,wi,b.n)){if(slots<=0)break;const ix=iM[k][i];if(ix>=cur129.length)continue;const p=cur129[ix];const cost=hourMode?(p.planned_mins+simBuf)/60:1;if(slots<cost)continue;schM[k][i].push([ds,p.lesson,p.planned_mins]);lwM[k][i]=wi;lmM[k][i]=p.planned_mins;iM[k][i]=ix+1;slots-=cost;}
     });
   });
   const dc={},wpm={};wds.forEach(d=>{const m=d.slice(0,7);wpm[m]=(wpm[m]||0)+1;});
@@ -1045,6 +1067,12 @@ function renderSimExtraList(){
     <button class="sim-extra-del" onclick="removeExtraBatch(${b.id})">✕</button>
   </div>`).join("");
 }
+function fmtSimDur(m){const h=Math.floor(m/60),mn=m%60;return mn>0?`${h}h ${String(mn).padStart(2,'0')}m`:`${h}h 00m`;}
+function initSimSP(){
+  const list=document.getElementById("sim-sp-list");if(!list)return;
+  const sorted=[...AP127_NICKS.map((nick,i)=>({nick,i}))].sort((a,b)=>a.nick.localeCompare(b.nick));
+  list.innerHTML=sorted.map(s=>`<label class="sim-sp-chip"><input type="checkbox" checked value="${s.i}"><span>${s.nick}</span></label>`).join('');
+}
 function runSimulation(){
   if(!G){toast("No data — load cache first","wa");return;}
   const capEl=document.getElementById("sim-cap"),horEl=document.getElementById("sim-hor"),s129El=document.getElementById("sim-129s");
@@ -1052,12 +1080,18 @@ function runSimulation(){
   CFG.horizon=+(horEl?.value)||800;
   CFG.ap129start=s129El?.value||"2026-06-01";
   CFG.n129=13;
-  const bd={AP124:G.ap124||[],AP126:G.ap126||[],AP127:G.ap127||[]};
+  CFG.simDur=+(document.getElementById("sim-dur")?.value)||120;
+  CFG.simBuf=+(document.getElementById("sim-buf")?.value)||30;
+  const spChecks=document.querySelectorAll("#sim-sp-list input[type=checkbox]");
+  const spIncluded=spChecks.length?new Set([...spChecks].filter(c=>c.checked).map(c=>+c.value)):null;
+  const ap127All=G.ap127||[];
+  const ap127Filtered=spIncluded?ap127All.filter((_,i)=>spIncluded.has(i)):ap127All;
+  const bd={AP124:G.ap124||[],AP126:G.ap126||[],AP127:ap127Filtered};
   const cur={AP124:G.cur124||[],AP126:G.cur126||[],AP127:G.cur127||[]};
   const t0=Date.now();
   const _d=new Date(Date.now()+7*3600000);_d.setUTCDate(_d.getUTCDate()+1);
   const tomorrowBKK=_d.toISOString().slice(0,10);
-  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,tomorrowBKK,CFG.hourMode||false);
+  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,tomorrowBKK,CFG.hourMode||false,CFG.simDur,CFG.simBuf);
   SIM_G.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";s.fi=AP127_FI[i]||"";s.se=AP127_SE[i]||"";});
   const ms=Date.now()-t0;
   const statusEl=document.getElementById("sim-status");
@@ -1072,6 +1106,10 @@ function renderSimulation(){
   if(capEl){capEl.value=CFG.cap;document.getElementById("sim-cap-v").textContent=CFG.cap;}
   if(horEl){horEl.value=CFG.horizon;document.getElementById("sim-hor-v").textContent=CFG.horizon;}
   if(s129El)s129El.value=CFG.ap129start;
+  const durEl=document.getElementById("sim-dur"),bufEl=document.getElementById("sim-buf");
+  if(durEl){durEl.value=CFG.simDur||120;document.getElementById("sim-dur-v").textContent=fmtSimDur(CFG.simDur||120);}
+  if(bufEl){bufEl.value=CFG.simBuf||30;document.getElementById("sim-buf-v").textContent=(CFG.simBuf||30)+'min';}
+  initSimSP();
   renderSimExtraList();
   if(!SIM_G)runSimulation();
 }
