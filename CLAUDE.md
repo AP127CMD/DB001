@@ -206,8 +206,6 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 
 1. **(Optional) Add Cloudflare WAF rate limiting** — Cloudflare dashboard → Security → WAF → Rate Limiting Rules on the data Worker route.
 
-2. **(Optional) Add Cloudflare WAF rate limiting** — Cloudflare dashboard → Security → WAF → Rate Limiting Rules on the data Worker route.
-
 ### ✅ Completed (2026-05-22)
 
 - **Fixed "stuck on Loading" bug** — duplicate `let AP127_RACE_SOLO` declaration caused a `SyntaxError` that prevented all JS from running on the student site. Removed the duplicate from `student.html`'s student-specific section (the synced `##AP127JS_START##` section already declares it). (PR #2)
@@ -216,6 +214,7 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 - **Mobile: all columns visible** — removed all `nth-child` `display:none` rules from both `index.html` and `student.html`; table `min-width` updated to 900px; progress bar narrowed to 36px
 - **Table header polish** — IDLE DAYS, Last Lesson split to 2-line headers; progress bar width reduced desktop 82→57px
 - Feature branch `claude/separate-homepage-website-CkBWy` fully merged to `main` (PR #1 + PR #2)
+- **Reverted (commit 99abf32)** — Duration/Buffer/SP simulation controls and Slot Finder panel were added then rolled back at user request; code is back to pre-65e4d16 state
 
 ### ✅ Completed (2026-05-21)
 
