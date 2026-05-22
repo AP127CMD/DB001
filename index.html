@@ -216,6 +216,19 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .d127-ll{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx);}
 .d127-ld{margin-left:auto;font-size:9px;color:var(--tx2);}
 .d127-note{font-size:10px;color:var(--tx3);margin-bottom:8px;}
+.sf-ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.sf-date-inp{background:var(--s2);border:1px solid var(--bd);color:var(--tx);border-radius:5px;padding:5px 9px;font-size:12px;font-family:'JetBrains Mono',monospace;outline:none;}
+.sf-date-inp:focus{border-color:var(--c127);}
+.sf-dur-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);padding:4px 8px;background:var(--s2);border:1px solid var(--bd2);border-radius:4px;}
+.sf-fi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:10px;}
+.sf-fi-card{background:var(--s2);border:1px solid var(--bd2);border-radius:7px;padding:10px 11px;transition:border-color .15s;}
+.sf-has-slots{border-color:rgba(251,146,60,.4);}
+.sf-fi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+.sf-fi-nick{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;}
+.sf-fi-count{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);}
+.sf-fi-name{font-size:10px;color:var(--tx2);margin-bottom:7px;}
+.sf-stu-list{display:flex;flex-wrap:wrap;gap:4px;min-height:22px;}
+.sf-chip{font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(251,146,60,.15);color:var(--c127);border:1px solid rgba(251,146,60,.3);}
 /* ##AP127CSS_END## */
 .pr-list{display:flex;flex-direction:column;gap:6px;padding:10px 12px;}
 .pr-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);}
@@ -578,6 +591,19 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
       </div>
     </div>
     <div class="d127-panel">
+      <div class="d127-h">
+        <span class="d127-t">Slot Finder</span>
+        <div class="sf-ctrl">
+          <input type="date" id="sf-date" class="sf-date-inp" oninput="renderSlotFinder()">
+          <span class="sf-dur-badge" id="sf-dur-label">Gap: 2h threshold</span>
+        </div>
+      </div>
+      <div class="d127-body">
+        <div class="d127-note">Shows eligible students per FI for the selected date — based on last flight date and Duration threshold.</div>
+        <div class="sf-fi-grid" id="sf-fi-grid"></div>
+      </div>
+    </div>
+    <div class="d127-panel">
       <div class="d127-h"><span class="d127-t">Flight Timeline vs Progress</span><span class="d127-s" id="d127-tl-meta">-</span></div>
       <div class="d127-body">
         <div class="d127-note">Rows are sorted leader to lagger. Dots mark dates each student actually flew.</div>
@@ -694,6 +720,7 @@ const AP127_NICKS=["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KO
 const AP127_FI=["W-CHAI","P-YUTH","P-YA","S-TI","N-TORN","I-PON","SN-TI","S-TI","A-WAT","W-NU","K-POL","C-CHAI","P-YUTH","SN-TI","E-PHOB","K-POL","S-WAN","N-TORN","E-PHOB","I-PON","K-CHAI","K-CHAI","P-YA","S-WAN","C-CHAI","W-NU","W-CHAI","A-WAT"];
 const AP127_SE=["DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-TDI"];
 const HOL=new Set(["2026-05-01","2026-05-04","2026-05-13","2026-06-01","2026-06-03","2026-07-28","2026-07-29","2026-07-30","2026-08-12","2026-10-13","2026-10-23","2026-12-07","2026-12-10","2026-12-31"]);
+const AP127_FI_FULL={"C-CHAI":"CHAROENCHAI U.","E-PHOB":"EKKAPHOP R.","I-PON":"ITTIPOL P.","K-CHAI":"KITTICHAI C.","K-POL":"KOONPHOL U.","N-TORN":"NAPATTORN S.","P-YA":"PARINYA B.","P-YUTH":"PHAHOLYUTH P.","SN-TI":"SANTI PO.","S-TI":"SANTI SUK.","S-WAN":"SOWAN C.","A-WAT":"THAWATANAN P.","W-NU":"WISANU T.","W-CHAI":"WUTTHICHAI L."};
 // ##AP127NICKS_END##
 const BC={AP124:"#c084fc",AP126:"#38bdf8",AP127:"#fb923c",AP129:"#4ade80"};
 const BB={AP124:"rgba(192,132,252,.12)",AP126:"rgba(56,189,248,.12)",AP127:"rgba(251,146,60,.12)",AP129:"rgba(74,222,128,.12)"};
@@ -1351,6 +1378,7 @@ function renderAP127Detail(){
   buildAP127Timeline(all,curriculum,maxDate);
   buildAP127RaceChart(all,curriculum,maxDate);
   buildAP127OverallChart(all,curriculum,maxDate);
+  renderSlotFinder();
 }
 function openAP127Drawer(idx){
   const s=AP127_VIEW_ROWS[idx];if(!s)return;
@@ -1550,6 +1578,47 @@ function buildAP127OverallChart(all,curriculum,maxDate){
       }
     }
   });
+}
+function ap127WDsBetween(from,to){
+  let cnt=0;const d=new Date(from+"T12:00:00Z"),end=new Date(to+"T12:00:00Z");
+  d.setUTCDate(d.getUTCDate()+1);
+  while(d<=end){const ds=d.toISOString().slice(0,10);if(isWD(ds))cnt++;d.setUTCDate(d.getUTCDate()+1);}
+  return cnt;
+}
+function renderSlotFinder(){
+  const dateEl=document.getElementById("sf-date");
+  const grid=document.getElementById("sf-fi-grid");
+  if(!grid)return;
+  const selDate=dateEl?.value||(()=>{const d=new Date(Date.now()+7*3600000);return d.toISOString().slice(0,10);})();
+  if(dateEl&&!dateEl.value)dateEl.value=selDate;
+  const durThresh=CFG.simDur||120;
+  const durLabel=document.getElementById("sf-dur-label");
+  if(durLabel)durLabel.textContent=`Gap ≥ ${fmtSimDur(durThresh)} → 2d`;
+  const st=G?.ap127||[];
+  const fiElig={};
+  Object.keys(AP127_FI_FULL).forEach(nick=>{fiElig[nick]=[];});
+  st.forEach(s=>{
+    if(!s.fi||!(s.fi in AP127_FI_FULL))return;
+    const last=s.flown?.at(-1);
+    const lastDate=last?.date||"";
+    const lastMins=last?.actual_mins||0;
+    const gap=lastMins>=durThresh?2:1;
+    const eligible=!lastDate||ap127WDsBetween(lastDate,selDate)>=gap;
+    if(eligible)fiElig[s.fi].push(s);
+  });
+  const ordered=Object.keys(AP127_FI_FULL).sort((a,b)=>AP127_FI_FULL[a].localeCompare(AP127_FI_FULL[b]));
+  const total=Object.values(fiElig).reduce((a,v)=>a+v.length,0);
+  grid.innerHTML=ordered.map(nick=>{
+    const full=AP127_FI_FULL[nick];
+    const students=fiElig[nick]||[];
+    const cnt=students.length;
+    const chips=students.map(s=>`<span class="sf-chip">${s.nick||s.name.split(" ")[0]}</span>`).join('');
+    return `<div class="sf-fi-card ${cnt>0?"sf-has-slots":""}">
+      <div class="sf-fi-header"><span class="sf-fi-nick" style="color:${cnt>0?"var(--c127)":"var(--tx3)"}">${nick}</span><span class="sf-fi-count">${cnt} student${cnt!==1?"s":""}</span></div>
+      <div class="sf-fi-name">${full}</div>
+      <div class="sf-stu-list">${chips||'<span style="color:var(--tx3);font-size:9px">—</span>'}</div>
+    </div>`;
+  }).join('')+`<div style="grid-column:1/-1;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);padding-top:4px">${total} student${total!==1?"s":""} ready across ${Object.values(fiElig).filter(v=>v.length>0).length} FIs on ${selDate}</div>`;
 }
 // ##AP127JS_END##
 
