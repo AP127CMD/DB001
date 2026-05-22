@@ -182,7 +182,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .d127-rank.bad{color:#ef4444;}.d127-rank.mid{color:var(--acc);}.d127-rank.ok{color:var(--done);}
 .d127-name{font-weight:700;font-size:12px;}
 .d127-mono{font-family:'JetBrains Mono',monospace;font-size:10px;}
-.d127-pbg{width:82px;height:5px;background:var(--s3);border-radius:99px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:5px;}
+.d127-pbg{width:57px;height:5px;background:var(--s3);border-radius:99px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:5px;}
 .d127-pf{height:100%;background:var(--c127);}
 .d127-side{display:flex;flex-direction:column;gap:10px;}
 .d127-body{padding:10px;}
@@ -226,7 +226,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .pf-filter .pt{margin-bottom:7px;color:var(--adm);}
 .pf-filter .fr{margin-bottom:0;}
 .pf-filter .fr input,.pf-filter .fr select{background:var(--s2);}
-@media(max-width:900px){nav{align-items:flex-start;padding-bottom:6px}.nright{margin-left:0}.ss{grid-template-columns:repeat(2,1fr);}.cr.c2,.cr.c3{grid-template-columns:1fr;}.sg{grid-template-columns:1fr;}.lg-grid{grid-template-columns:repeat(2,1fr);}.d127-kpis{grid-template-columns:repeat(2,1fr);}.d127-grid,.d127-dg{grid-template-columns:1fr;}.d127-table{min-width:690px}.d127-table th,.d127-table td{padding:6px 4px;font-size:9.5px}.d127-pbg{width:52px}.d127-table th:nth-child(4),.d127-table td:nth-child(4),.d127-table th:nth-child(8),.d127-table td:nth-child(8){display:none;}#sim-subnav{flex-wrap:nowrap;overflow-x:auto;}.sim-finish-grid{grid-template-columns:1fr;}.sim-ctrl-row{grid-template-columns:1fr;}.bt{padding:8px 14px;font-size:12px;}}
+@media(max-width:900px){nav{align-items:flex-start;padding-bottom:6px}.nright{margin-left:0}.ss{grid-template-columns:repeat(2,1fr);}.cr.c2,.cr.c3{grid-template-columns:1fr;}.sg{grid-template-columns:1fr;}.lg-grid{grid-template-columns:repeat(2,1fr);}.d127-kpis{grid-template-columns:repeat(2,1fr);}.d127-grid,.d127-dg{grid-template-columns:1fr;}.d127-table{min-width:690px}.d127-table th,.d127-table td{padding:6px 4px;font-size:9.5px}.d127-pbg{width:36px}.d127-table th:nth-child(4),.d127-table td:nth-child(4),.d127-table th:nth-child(8),.d127-table td:nth-child(8){display:none;}#sim-subnav{flex-wrap:nowrap;overflow-x:auto;}.sim-finish-grid{grid-template-columns:1fr;}.sim-ctrl-row{grid-template-columns:1fr;}.bt{padding:8px 14px;font-size:12px;}}
 /* SIMULATION SUB-NAV */
 #sim-subnav{display:none;position:sticky;top:47px;z-index:298;background:rgba(13,17,23,.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);padding:0 14px;gap:0;align-items:center;flex-wrap:wrap;}
 #sim-subnav.show{display:flex;}
@@ -531,7 +531,7 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
         <div class="d127-h"><span class="d127-t">Progress Ranking</span><span class="d127-s" id="d127-asof">As of -</span></div>
         <div class="d127-table-wrap">
           <table class="d127-table">
-            <thead><tr><th>Rank</th><th>Name</th><th>Call Sign</th><th>FI</th><th>Progress</th><th>HRS<br>DONE</th><th>LESSON<br>DONE</th><th>Last Lesson</th><th>Last FLT</th><th>IDLE<br>(DAYS)</th><th>DAY<br>Delta</th><th>HRS<br>Delta</th></tr></thead>
+            <thead><tr><th>Rank</th><th>Name</th><th>Call Sign</th><th>FI</th><th>Progress</th><th>HRS<br>DONE</th><th>LESSON<br>DONE</th><th>Last<br>Lesson</th><th>Last FLT</th><th>IDLE<br>DAYS</th><th>DAY<br>Delta</th><th>HRS<br>Delta</th></tr></thead>
             <tbody id="d127-rows"></tbody>
           </table>
         </div>
@@ -1277,7 +1277,7 @@ function renderAP127Detail(){
     const idle=ap127IdleDays(s,maxDate);
     const idleTxt=idle===9999?"-":idle.toString();
     let idleStyle="";
-    if(idle!==9999){if(idle<=2)idleStyle="color:var(--tx)";else if(idle<=5)idleStyle="color:#fbbf24";else if(idle<=10)idleStyle="color:#ff6b6b";else idleStyle="color:#ff6b6b;background:rgba(255,255,255,0.85);border-radius:3px;padding:1px 5px";}
+    if(idle!==9999){if(idle<=2)idleStyle="color:var(--tx)";else if(idle<=5)idleStyle="color:#fbbf24";else if(idle<=10)idleStyle="color:#ff6b6b";else idleStyle="color:#ff6b6b;background:rgba(255,255,255,0.85);border-radius:3px;padding:1px 5px;font-weight:700";}
     const dayDelta=ap127DayDelta(s,planMap,today);
     const dayDeltaTxt=dayDelta===null?"-":(dayDelta>=0?`+${dayDelta}d`:`${dayDelta}d`);
     const dayDeltaColor=dayDelta===null?"":dayDelta>0?"#ff6b6b":"#51cf66";
