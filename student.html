@@ -116,7 +116,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
       <div class="d127-kpi"><div class="d127-kl">Ahead / Behind</div><div class="d127-person" id="d127-k-ahead"><small>Ahead</small>-</div><div class="d127-person" id="d127-k-behind"><small>Behind</small>-</div></div>
     </div>
     <div class="d127-controls">
-      <input id="d127-q" placeholder="Search name or callsign..." oninput="renderAP127Detail()">
+      <input id="d127-q" placeholder="Search name..." oninput="renderAP127Detail()">
       <select id="d127-sort" onchange="renderAP127Detail()">
         <option value="behind">Sort: Most behind first</option>
         <option value="ahead">Sort: Most ahead first</option>
@@ -130,7 +130,7 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
         <div class="d127-h"><span class="d127-t">Progress Ranking</span><span class="d127-s" id="d127-asof">As of -</span></div>
         <div class="d127-table-wrap">
           <table class="d127-table">
-            <thead><tr><th>Rank</th><th>Name</th><th>Call Sign</th><th>SE<br>TYPE</th><th>FI</th><th>Progress</th><th>HRS<br>DONE</th><th>LESSON<br>DONE</th><th>Last<br>Lesson</th><th>Last FLT</th><th>IDLE<br>DAYS</th><th>DAY<br>Delta</th><th>HRS<br>Delta</th></tr></thead>
+            <thead><tr><th>Rank</th><th>Name</th><th>SE<br>TYPE</th><th>FI</th><th>Progress</th><th>HRS<br>DONE</th><th>LESSON<br>DONE</th><th>Last<br>Lesson</th><th>Last FLT</th><th>IDLE<br>DAYS</th><th>DAY<br>Delta</th><th>HRS<br>Delta</th></tr></thead>
             <tbody id="d127-rows"></tbody>
           </table>
         </div>
@@ -199,6 +199,7 @@ const AP127_NICKS=["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KO
 const AP127_FI=["W-CHAI","P-YUTH","P-YA","S-TI","N-TORN","I-POL","SN-TI","S-TI","A-WAT","W-NU","K-POL","C-CHAI","P-YUTH","SN-TI","E-PHOB","K-POL","S-WAN","N-TORN","E-PHOB","I-POL","K-CHAI","K-CHAI","P-YA","S-WAN","C-CHAI","W-NU","W-CHAI","A-WAT"];
 const AP127_SE=["DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-TDI"];
 const HOL=new Set(["2026-05-01","2026-05-04","2026-05-13","2026-06-01","2026-06-03","2026-07-28","2026-07-29","2026-07-30","2026-08-12","2026-10-13","2026-10-23","2026-12-07","2026-12-10","2026-12-31"]);
+const AP127_FI_FULL={"W-CHAI":"WUTTHICHAI L.","P-YUTH":"PHAHOLYUTH P.","P-YA":"PARINYA B.","S-TI":"SANTI SUK.","N-TORN":"NAPATTORN S.","I-POL":"ITTIPOL P.","SN-TI":"SANTI PO.","A-WAT":"THAWATANAN P.","W-NU":"WISANU T.","K-POL":"KOONPHOL U.","C-CHAI":"CHAROENCHAI U.","E-PHOB":"EKKAPHOP R.","S-WAN":"SOWAN C.","K-CHAI":"KITTICHAI C."};
 // ##AP127NICKS_END##
 
 // Worker URL is injected at deploy time via CF_WORKER_URL GitHub secret.
@@ -260,8 +261,8 @@ function renderAP127Detail(){
   const maxDate=all.flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"";
   const sortedLead=ap127PaceSort(all,maxDate);
   const sortedLag=ap127BehindSort(all,maxDate);
-  const aheadNames=sortedLead.slice(0,3).map(s=>s.nick||s.name.split(" ")[0]).join(", ");
-  const lagNames=sortedLag.slice(0,3).map(s=>s.nick||s.name.split(" ")[0]).join(", ");
+  const aheadNames=sortedLead.slice(0,3).map(s=>ap127ShortName(s.name)).join(", ");
+  const lagNames=sortedLag.slice(0,3).map(s=>ap127ShortName(s.name)).join(", ");
   const prg=(total&&curriculum)?(doneAll/(total*curriculum)*100):0;
   const planMap={};(G.cur127||[]).forEach(c=>{if(c.lesson&&c.planned_date)planMap[c.lesson]=c.planned_date;});
   document.getElementById("d127-k-stu").textContent=total||"-";
@@ -274,7 +275,7 @@ function renderAP127Detail(){
 
   const q=(document.getElementById("d127-q")?.value||"").toLowerCase().trim();
   let rows=ap127SortRows(all,maxDate);
-  if(q)rows=rows.filter(s=>s.name.toLowerCase().includes(q)||(s.nick||"").toLowerCase().includes(q));
+  if(q)rows=rows.filter(s=>s.name.toLowerCase().includes(q));
   AP127_VIEW_ROWS=rows;
   const updTxt=G._updated?new Date(G._updated).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
   document.getElementById("d127-asof").textContent=`Updated ${updTxt}`;
@@ -302,7 +303,7 @@ function renderAP127Detail(){
     const dayDeltaColor=dayDelta===null?"":dayDelta>0?"#ff6b6b":"#51cf66";
     const rankColor=getBandColor(s.done||0);
     const last=(s.flown||[]).at(-1)||{};
-    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td><div class="d127-name">${ap127ShortName(s.name)}</div></td><td class="d127-mono">${s.nick||"-"}</td><td class="d127-mono" style="color:${s.se==="DA40-TDI"?"#fb923c":"#38bdf8"};font-weight:600">${s.se||"-"}</td><td class="d127-mono">${s.fi||"-"}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${s.done||0}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td><td class="d127-mono" style="${idleStyle}">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td></tr>`;
+    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td><div class="d127-name">${ap127ShortName(s.name)}</div></td><td class="d127-mono" style="color:${s.se==="DA40-TDI"?"#fb923c":"#38bdf8"};font-weight:600">${s.se||"-"}</td><td class="d127-mono">${AP127_FI_FULL[s.fi]||s.fi||"-"}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${s.done||0}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td><td class="d127-mono" style="${idleStyle}">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td></tr>`;
   }).join("");
   const bandDefs=[
     {label:"AHEAD", lo:aheadLo,   hi:leaderDone, c:"#7be9b8"},
@@ -313,12 +314,12 @@ function renderAP127Detail(){
   const maxN=Math.max(...bandDefs.map(b=>b.students.length),1);
   document.getElementById("d127-bands").innerHTML=bandDefs.map(b=>{
     const rangeStr=b.lo>=b.hi?`${b.lo}`:`${b.lo}–${b.hi}`;
-    const names=b.students.map(s=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8px;padding:1px 5px;border-radius:2px;background:${b.c}22;color:${b.c}">${s.nick||s.name.split(" ")[0]}</span>`).join("");
+    const names=b.students.map(s=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8px;padding:1px 5px;border-radius:2px;background:${b.c}22;color:${b.c}">${ap127ShortName(s.name)}</span>`).join("");
     return `<div style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:74px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.5px;color:${b.c}">${b.label}<br><span style="color:var(--tx3);font-size:8px">${rangeStr}</span></div><div style="flex:1;height:16px;background:var(--s3);border-radius:99px;overflow:hidden"><div style="height:100%;width:${(b.students.length/maxN*100)}%;background:${b.c};display:flex;align-items:center;padding-left:7px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#000">${b.students.length}</div></div></div><div style="display:flex;flex-wrap:wrap;gap:3px;padding-left:81px">${names||"—"}</div></div>`;
   }).join("");
 
   const recent=[...all].map(s=>({s,last:(s.flown||[]).at(-1)||{}})).filter(x=>x.last.date).sort((a,b)=>(b.last.date||"").localeCompare(a.last.date||"")||(b.s.done||0)-(a.s.done||0)).slice(0,8);
-  document.getElementById("d127-activity").innerHTML=recent.map(x=>`<div class="d127-ai"><div class="d127-an">${x.s.nick||x.s.name} · ${x.last.lesson||"-"}</div><div class="d127-ad">${ap127FmtDate(x.last.date)} · ${ap127Hours(x.s).toFixed(2)} hrs · ${x.s.done||0}/${curriculum}</div></div>`).join("")||`<div class="d127-ad">No activity yet.</div>`;
+  document.getElementById("d127-activity").innerHTML=recent.map(x=>`<div class="d127-ai"><div class="d127-an">${ap127ShortName(x.s.name)} · ${x.last.lesson||"-"}</div><div class="d127-ad">${ap127FmtDate(x.last.date)} · ${ap127Hours(x.s).toFixed(2)} hrs · ${x.s.done||0}/${curriculum}</div></div>`).join("")||`<div class="d127-ad">No activity yet.</div>`;
   buildAP127Timeline(all,curriculum,maxDate);
   buildAP127RaceChart(all,curriculum,maxDate);
   buildAP127OverallChart(all,curriculum,maxDate);
@@ -327,7 +328,7 @@ function openAP127Drawer(idx){
   const s=AP127_VIEW_ROWS[idx];if(!s)return;
   const total=s.total||0,done=s.done||0;
   document.getElementById("d127-d-name").textContent=s.name;
-  document.getElementById("d127-d-meta").textContent=`${s.nick||"-"} · ${s.catc_id||"-"} · ${done}/${total} lessons · ${ap127Hours(s).toFixed(2)} hrs`;
+  document.getElementById("d127-d-meta").textContent=`${s.catc_id||"-"} · ${done}/${total} lessons · ${ap127Hours(s).toFixed(2)} hrs`;
   const flown=(s.flown||[]).slice(-14).reverse();
   document.getElementById("d127-d-flown").innerHTML=flown.length?flown.map(f=>`<div class="d127-li"><div class="d127-ldt">${ap127FmtDate(f.date)}</div><div class="d127-ll">${f.lesson||"-"}</div><div class="d127-ld">${hm(ap127FlightMins(f))}</div></div>`).join(""):`<div class="d127-ad">No completed flights.</div>`;
   const plan=(s.planned||[]).slice(0,14);
@@ -351,7 +352,7 @@ function buildAP127Timeline(all,curriculum,maxDate){
     const col=pal[seg];
     const flownDates=(s.flown||[]).filter(f=>f.date).map(f=>({x:f.date,y:idx+1}));
     return {
-      label:s.nick||s.name,
+      label:ap127ShortName(s.name),
       data:flownDates,
       showLine:true,
       borderColor:col,
@@ -395,7 +396,7 @@ function buildAP127Timeline(all,curriculum,maxDate){
             color:"#8b949e",
             callback:v=>{
               const i=Math.round(v)-1;
-              return(i>=0&&i<sorted.length)?`${i+1}. ${sorted[i].nick||sorted[i].name.split(" ")[0]}`:"";
+              return(i>=0&&i<sorted.length)?`${i+1}. ${ap127ShortName(sorted[i].name)}`:"";
             }
           },
           grid:{color:"#21262d"}
@@ -404,7 +405,7 @@ function buildAP127Timeline(all,curriculum,maxDate){
     }
   });
   const lead=sorted[0],lag=sorted.at(-1);
-  document.getElementById("d127-tl-meta").textContent=lead&&lag?`Leader ${lead.nick||lead.name.split(" ")[0]} (${lead.done||0}/${curriculum}) · Lag ${lag.nick||lag.name.split(" ")[0]} (${lag.done||0}/${curriculum})`:"-";
+  document.getElementById("d127-tl-meta").textContent=lead&&lag?`Leader ${ap127ShortName(lead.name)} (${lead.done||0}/${curriculum}) · Lag ${ap127ShortName(lag.name)} (${lag.done||0}/${curriculum})`:"-";
 }
 
 let AP127_RACE_SOLO=null;
@@ -436,7 +437,7 @@ function buildAP127RaceChart(all,curriculum,maxDate){
   racers.forEach((s,i)=>{
     const hue=(i*360/Math.max(racers.length,1)).toFixed(0);
     const col=`hsla(${hue},85%,62%,0.8)`;
-    const nick=s.nick||s.name;
+    const nick=ap127ShortName(s.name);
     const ad=(s.flown||[]).map(f=>f.date).filter(d=>d&&d<=today).sort();
     const visible=AP127_RACE_SOLO===null||AP127_RACE_SOLO===nick;
     const pts=cumSeries(ad);
@@ -471,7 +472,7 @@ function buildAP127RaceChart(all,curriculum,maxDate){
   allBtn.onclick=()=>{AP127_RACE_SOLO=null;buildAP127RaceChart(G.ap127,G.cur127?.length||101,(G.ap127||[]).flatMap(s=>(s.flown||[]).map(f=>f.date).filter(Boolean)).sort().at(-1)||"");};
   togglesDiv.appendChild(allBtn);
   racers.forEach(s=>{
-    const nick=s.nick||s.name;
+    const nick=ap127ShortName(s.name);
     const active=AP127_RACE_SOLO===nick;
     const btn=document.createElement("button");
     btn.textContent=nick;
@@ -488,7 +489,7 @@ function buildAP127OverallChart(all,curriculum,maxDate){
   CHARTS.ap127overall=mkC("d127-overall",{
     type:"bar",
     data:{
-      labels:sorted.map(s=>s.nick||s.name.split(" ")[0]),
+      labels:sorted.map(s=>ap127ShortName(s.name)),
       datasets:[{
         label:"Completed Lessons",
         data:sorted.map(s=>s.done||0),
