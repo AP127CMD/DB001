@@ -5,7 +5,10 @@ const RELAY = process.env.RELAY_URL;
 if (!RELAY) { console.error("RELAY_URL environment variable is not set"); process.exit(1); }
 const BATCHES = ["AP124", "AP126", "AP127"];
 
-const AP127_NICKS = ["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN","K-SEE","KRIT","M-PHAN","N-PON","N-KALP","N-PHAT","P-THAN","P-KORN","P-KUL","P-DET","S-SIT","S-KORN","S-WITCH","S-WAN","T-KORN","T-WAJ","V-PHON","W-PHOL","W-POL","W-PONG"];
+const AP127_NICKS   = ["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN","K-SEE","KRIT","M-PHAN","N-PON","N-KALP","N-PHAT","P-THAN","P-KORN","P-KUL","P-DET","S-SIT","S-KORN","S-WITCH","S-WAN","T-KORN","T-WAJ","V-PHON","W-PHOL","W-POL","W-PONG"];
+const AP127_FI      = ["W-CHAI","P-YUTH","P-YA","S-TI","N-TORN","I-POL","SN-TI","S-TI","A-WAT","W-NU","K-POL","C-CHAI","P-YUTH","SN-TI","E-PHOB","K-POL","S-WAN","N-TORN","E-PHOB","I-POL","K-CHAI","K-CHAI","P-YA","S-WAN","C-CHAI","W-NU","W-CHAI","A-WAT"];
+const AP127_SE      = ["DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-TDI","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-CS","DA40-TDI","DA40-TDI","DA40-TDI"];
+const AP127_FI_FULL = {"W-CHAI":"WUTTHICHAI L.","P-YUTH":"PHAHOLYUTH P.","P-YA":"PARINYA B.","S-TI":"SANTI SUK.","N-TORN":"NAPATTORN S.","I-POL":"ITTIPOL P.","SN-TI":"SANTI PO.","A-WAT":"THAWATANAN P.","W-NU":"WISANU T.","K-POL":"KOONPHOL U.","C-CHAI":"CHAROENCHAI U.","E-PHOB":"EKKAPHOP R.","S-WAN":"SOWAN C.","K-CHAI":"KITTICHAI C."};
 const HOL = new Set(["2026-05-01","2026-05-04","2026-05-13","2026-06-01","2026-06-03","2026-07-28","2026-07-29","2026-07-30","2026-08-12","2026-10-13","2026-10-23","2026-12-07","2026-12-10","2026-12-31"]);
 const CFG = {cap:25, n129:13, ap129start:"2026-06-01", horizon:800};
 
@@ -145,9 +148,9 @@ async function fetchBatch(batch) {
   }
   if (failed.length === BATCHES.length) { console.error("All batches failed — aborting"); process.exit(1); }
 
-  results.AP127?.forEach((s, i) => { s.nick = AP127_NICKS[i] || ""; });
+  results.AP127?.forEach((s, i) => { s.nick = AP127_NICKS[i] || ""; s.fi = AP127_FI[i] || ""; s.se = AP127_SE[i] || ""; });
   const G = runScheduler(results, curricula);
-  G.ap127?.forEach((s, i) => { s.nick = AP127_NICKS[i] || ""; });
+  G.ap127?.forEach((s, i) => { s.nick = AP127_NICKS[i] || ""; s.fi = AP127_FI[i] || ""; s.se = AP127_SE[i] || ""; });
 
   G._updated = new Date().toISOString();
   const fs = await import("fs");
