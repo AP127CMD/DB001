@@ -50,12 +50,23 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
 .d127-h{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-bottom:1px solid var(--bd2);}
 .d127-t{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--c127);text-transform:uppercase;letter-spacing:1px;}
 .d127-s{font-size:10px;color:var(--tx3);}
-.d127-table-wrap{overflow:auto;}
+.d127-table-wrap{overflow:auto;max-height:640px;}
 .d127-table{width:100%;border-collapse:collapse;min-width:760px;}
 .d127-table th,.d127-table td{padding:7px 6px;border-bottom:1px solid var(--bd2);text-align:left;font-size:10.5px;}
-.d127-table th{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;background:rgba(255,255,255,.01);}
+.d127-table th{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;background:var(--s1);position:sticky;top:0;z-index:2;box-shadow:inset 0 -1px 0 var(--bd2);}
+.d127-table th[data-key]{cursor:pointer;user-select:none;}
+.d127-table th[data-key]:hover{color:var(--c127);}
+.d127-table th .d127-sarr{display:inline-block;margin-left:2px;color:var(--c127);opacity:.85;font-size:8px;}
 .d127-table tr{cursor:pointer;}
 .d127-table tr:hover{background:rgba(251,146,60,.08);}
+.d127-today-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px #4ade80;vertical-align:middle;margin-left:5px;animation:d127pulse 1.6s infinite;}
+@keyframes d127pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.d127-rel{color:var(--tx3);font-size:9px;margin-left:3px;}
+.d127-phase-legend{display:flex;flex-wrap:wrap;gap:8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx2);margin-bottom:6px;align-items:center;}
+.d127-phase-legend .d127-pc{display:inline-flex;align-items:center;gap:4px;}
+.d127-phase-legend .d127-pdot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.d127-reset{background:var(--s2);border:1px solid var(--bd);color:var(--tx2);border-radius:5px;padding:4px 9px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:10px;}
+.d127-reset:hover{color:var(--c127);border-color:var(--c127);}
 .d127-rank{font-family:'Rajdhani',sans-serif;font-size:19px;line-height:1;}
 .d127-rank.bad{color:#ef4444;}.d127-rank.mid{color:var(--acc);}.d127-rank.ok{color:var(--done);}
 .d127-name{font-weight:700;font-size:12px;}
@@ -127,10 +138,24 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
     </div>
     <div class="d127-grid">
       <div class="d127-panel">
-        <div class="d127-h"><span class="d127-t">Progress Ranking</span><span class="d127-s" id="d127-asof">As of -</span></div>
+        <div class="d127-h"><span class="d127-t">Progress Ranking</span><span style="display:flex;align-items:center;gap:8px"><button class="d127-reset" id="d127-reset" title="Reset sort to default" onclick="ap127ResetSort()">⟳ Reset</button><span class="d127-s" id="d127-asof">As of -</span></span></div>
         <div class="d127-table-wrap">
           <table class="d127-table">
-            <thead><tr><th>Rank</th><th>Name</th><th>SE<br>TYPE</th><th>FI</th><th>Progress</th><th>HRS<br>DONE</th><th>LESSON<br>DONE</th><th>Last<br>Lesson</th><th>Last FLT</th><th>IDLE<br>DAYS</th><th>DAY<br>Delta</th><th>HRS<br>Delta</th></tr></thead>
+            <thead><tr>
+              <th>Rank</th>
+              <th data-key="name" title="Sort by name">Name</th>
+              <th data-key="nick" title="Sort by call sign">CALL<br>SIGN</th>
+              <th data-key="se" title="Sort by single-engine type">SE<br>TYPE</th>
+              <th data-key="fi" title="Sort by Flight Instructor">FI</th>
+              <th data-key="ahead" title="Sort by progress (most ahead first)">Progress</th>
+              <th data-key="hours" title="Sort by hours done (most first)">HRS<br>DONE</th>
+              <th data-key="ahead" title="Sort by lessons done (most first)">LESSON<br>DONE</th>
+              <th data-key="lastLesson" title="Sort by last lesson code">Last<br>Lesson</th>
+              <th data-key="lastFlt" title="Sort by last flight date (newest first)">Last FLT</th>
+              <th data-key="idle" title="Sort by idle days (most idle first)">IDLE<br>DAYS</th>
+              <th data-key="dayDelta" title="DAY Delta = today − planned date of last completed lesson. Positive = delay.">DAY<br>Delta</th>
+              <th data-key="hrsDelta" title="HRS Delta = actual hours flown − planned curriculum hours up to today.">HRS<br>Delta</th>
+            </tr></thead>
             <tbody id="d127-rows"></tbody>
           </table>
         </div>
@@ -154,7 +179,8 @@ nav{position:sticky;top:0;z-index:300;background:rgba(13,17,23,.97);backdrop-fil
     <div class="d127-panel">
       <div class="d127-h"><span class="d127-t">Flight Timeline vs Progress</span><span class="d127-s" id="d127-tl-meta">-</span></div>
       <div class="d127-body">
-        <div class="d127-note">Rows are sorted leader to lagger. Dots mark dates each student actually flew.</div>
+        <div class="d127-note">Rows are sorted leader to lagger. Dots mark dates each student actually flew, colored by lesson phase. Red segments mark gaps &gt; 7 days. Click any dot for details.</div>
+        <div class="d127-phase-legend" id="d127-phase-legend"></div>
         <div id="d127-timeline-wrap" style="position:relative;height:330px;width:100%"><canvas id="d127-timeline"></canvas></div>
       </div>
     </div>
@@ -221,6 +247,20 @@ function copts(sx={},sy={},extra={}){return{responsive:true,maintainAspectRatio:
 
 // ##AP127JS_START##
 // ── AP127 DETAIL ──
+function ap127TodayBKK(){const now=new Date();const bkk=new Date(now.getTime()+(now.getTimezoneOffset()+420)*60000);return bkk.toISOString().slice(0,10);}
+const AP127_PHASE_DEFS=[
+  {k:"CDGL",label:"CDGL",test:/^CDGL/i,c:"#fb923c"},
+  {k:"GL",  label:"GL",  test:/^GL/i,  c:"#4ade80"},
+  {k:"IF",  label:"IF/IL",test:/^(IF|IL)/i,c:"#38bdf8"},
+  {k:"XV",  label:"XV/XI",test:/^(XV|XI)/i,c:"#a78bfa"},
+  {k:"NL",  label:"NL",  test:/^NL/i,  c:"#818cf8"},
+  {k:"SP",  label:"SP/PIC",test:/^(SP|PIC)/i,c:"#f59e0b"},
+  {k:"M",   label:"M",   test:/^M/i,   c:"#f472b6"},
+];
+const AP127_PHASE_OTHER={k:"OTH",label:"Other",c:"#6b7280"};
+function ap127LessonPhase(code){if(!code)return AP127_PHASE_OTHER;const c=String(code).trim();for(const d of AP127_PHASE_DEFS){if(d.test.test(c))return d;}return AP127_PHASE_OTHER;}
+function ap127IdleLineColor(d){if(d<=2)return"#e6edf3";if(d<=5)return"#fbbf24";return"#ff6b6b";}
+function ap127RelDays(asOf,date){const d=ap127DateDiff(asOf,date);return d===null?"":d<=0?"today":d===1?"1d":`${d}d`;}
 function ap127ShortName(n){const p=n.trim().split(/\s+/);return p.length<2?n:p[0]+" "+p[p.length-1][0]+".";}
 function ap127FmtDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}catch{return ds;}}
 function ap127ShortDate(ds){if(!ds)return"-";try{return new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}catch{return ds;}}
@@ -241,12 +281,34 @@ function ap127PlanDeltaDays(s,planMap){
 function ap127DayDelta(s,planMap,today){const last=(s.flown||[]).at(-1);if(!last)return null;const planDate=planMap[last.lesson];if(!planDate)return null;const delta=ap127DateDiff(today,planDate);return delta;}
 function ap127PaceSort(arr,asOf){return [...arr].sort((a,b)=>(b.done||0)-(a.done||0)||ap127IdleDays(a,asOf)-ap127IdleDays(b,asOf));}
 function ap127BehindSort(arr,asOf){return [...arr].sort((a,b)=>(a.done||0)-(b.done||0)||ap127IdleDays(b,asOf)-ap127IdleDays(a,asOf));}
-function ap127SortRows(arr,asOf=""){
+function ap127SortRows(arr,asOf="",planMap={},today=""){
   const mode=document.getElementById("d127-sort")?.value||"behind";
+  const cmpStr=(a,b)=>(a||"").toString().localeCompare((b||"").toString());
   if(mode==="ahead")return ap127PaceSort(arr,asOf);
   if(mode==="hours")return [...arr].sort((a,b)=>ap127Hours(b)-ap127Hours(a)||(b.done||0)-(a.done||0));
   if(mode==="name")return [...arr].sort((a,b)=>a.name.localeCompare(b.name));
+  if(mode==="nick")return [...arr].sort((a,b)=>cmpStr(a.nick,b.nick));
+  if(mode==="se")return [...arr].sort((a,b)=>cmpStr(a.se,b.se)||(b.done||0)-(a.done||0));
+  if(mode==="fi")return [...arr].sort((a,b)=>cmpStr(a.fi,b.fi)||(b.done||0)-(a.done||0));
+  if(mode==="lastLesson")return [...arr].sort((a,b)=>cmpStr((a.flown||[]).at(-1)?.lesson||a.next_lesson,(b.flown||[]).at(-1)?.lesson||b.next_lesson));
+  if(mode==="lastFlt")return [...arr].sort((a,b)=>(ap127LastFlightDate(b)||"").localeCompare(ap127LastFlightDate(a)||""));
+  if(mode==="idle")return [...arr].sort((a,b)=>ap127IdleDays(b,asOf)-ap127IdleDays(a,asOf));
+  if(mode==="dayDelta"){const f=s=>{const v=ap127DayDelta(s,planMap,today);return v===null?-Infinity:v;};return [...arr].sort((a,b)=>f(b)-f(a));}
+  if(mode==="hrsDelta"){const ph=ap127PlannedHoursAsOf(today);const f=s=>ap127Hours(s)-ph;return [...arr].sort((a,b)=>f(a)-f(b));}
   return ap127BehindSort(arr,asOf);
+}
+function ap127ResetSort(){
+  const sel=document.getElementById("d127-sort");
+  if(sel){[...sel.querySelectorAll("option[data-dyn='1']")].forEach(o=>o.remove());sel.value="behind";}
+  const q=document.getElementById("d127-q");if(q)q.value="";
+  renderAP127Detail();
+}
+function ap127HeaderClick(key){
+  const sel=document.getElementById("d127-sort");
+  if(!sel||!key)return;
+  if(![...sel.options].some(o=>o.value===key)){const o=document.createElement("option");o.value=key;o.textContent="Sort: "+key;o.dataset.dyn="1";sel.appendChild(o);}
+  sel.value=key;
+  renderAP127Detail();
 }
 function ap127RankClass(rank,total){if(rank<=3)return"bad";if(rank<=Math.ceil(total*.4))return"mid";return"ok";}
 function renderAP127Detail(){
@@ -273,9 +335,10 @@ function renderAP127Detail(){
   document.getElementById("d127-k-behind").innerHTML=`<small>Behind</small>${lagNames||"-"}`;
   document.getElementById("d127-meta").textContent=`${doneAll} lessons done · Avg ${avgDone.toFixed(1)}`;
 
+  const today=ap127TodayBKK();
   const q=(document.getElementById("d127-q")?.value||"").toLowerCase().trim();
-  let rows=ap127SortRows(all,maxDate);
-  if(q)rows=rows.filter(s=>s.name.toLowerCase().includes(q));
+  let rows=ap127SortRows(all,maxDate,planMap,today);
+  if(q)rows=rows.filter(s=>s.name.toLowerCase().includes(q)||(s.nick||"").toLowerCase().includes(q)||(s.fi||"").toLowerCase().includes(q));
   AP127_VIEW_ROWS=rows;
   const updTxt=G._updated?new Date(G._updated).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
   document.getElementById("d127-asof").textContent=`Updated ${updTxt}`;
@@ -286,12 +349,11 @@ function renderAP127Detail(){
   const aheadLo=leaderDone-step+1,midLo=leaderDone-step*2+1;
   const getBandColor=(done)=>{if(done>=aheadLo)return"#7be9b8";if(done>=midLo)return"#ffd67a";return"#ffa0a0";};
   const tbody=document.getElementById("d127-rows");
-  const today=new Date().toISOString().slice(0,10);
+  const plannedHrsToday=ap127PlannedHoursAsOf(today);
   tbody.innerHTML=rows.map((s,idx)=>{
     const rank=idx+1,pct=curriculum?((s.done||0)/curriculum*100):0;
     const hrs=ap127Hours(s);
-    const plannedHrs=ap127PlannedHoursAsOf(today);
-    const hrsDelta=hrs-plannedHrs;
+    const hrsDelta=hrs-plannedHrsToday;
     const hrsDeltaTxt=(hrsDelta>=0?"+":"")+hrsDelta.toFixed(1)+"h";
     const hrsDeltaColor=hrsDelta>=0?"#51cf66":"#ff6b6b";
     const idle=ap127IdleDays(s,maxDate);
@@ -303,8 +365,16 @@ function renderAP127Detail(){
     const dayDeltaColor=dayDelta===null?"":dayDelta>0?"#ff6b6b":"#51cf66";
     const rankColor=getBandColor(s.done||0);
     const last=(s.flown||[]).at(-1)||{};
-    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span></td><td><div class="d127-name">${ap127ShortName(s.name)}</div></td><td class="d127-mono" style="color:${s.se==="DA40-TDI"?"#fb923c":"#38bdf8"};font-weight:600">${s.se||"-"}</td><td class="d127-mono">${AP127_FI_FULL[s.fi]||s.fi||"-"}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${s.done||0}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}</td><td class="d127-mono" style="${idleStyle}">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td></tr>`;
+    const flewToday=last.date===today;
+    const rel=last.date?ap127RelDays(today,last.date):"";
+    return `<tr onclick="openAP127Drawer(${idx})"><td><span class="d127-rank" style="background:${rankColor};color:#000">${rank}</span>${flewToday?'<span class="d127-today-dot" title="Flew today"></span>':""}</td><td><div class="d127-name">${ap127ShortName(s.name)}</div></td><td class="d127-mono" style="font-weight:700;color:var(--c127)">${s.nick||"-"}</td><td class="d127-mono" style="color:${s.se==="DA40-TDI"?"#fb923c":"#38bdf8"};font-weight:600">${s.se||"-"}</td><td class="d127-mono">${AP127_FI_FULL[s.fi]||s.fi||"-"}</td><td style="padding:0 4px"><span class="d127-pbg"><span class="d127-pf" style="width:${pct.toFixed(1)}%"></span></span><span class="d127-mono" style="font-size:9px">${pct.toFixed(0)}%</span></td><td class="d127-mono">${hrs.toFixed(1)}</td><td class="d127-mono">${s.done||0}</td><td class="d127-mono">${last.lesson||s.next_lesson||"-"}</td><td class="d127-mono">${ap127ShortDate(last.date)}${rel?`<span class="d127-rel">(${rel})</span>`:""}</td><td class="d127-mono" style="${idleStyle}">${idleTxt}</td><td class="d127-mono" style="color:${dayDeltaColor}">${dayDeltaTxt}</td><td class="d127-mono" style="color:${hrsDeltaColor}">${hrsDeltaTxt}</td></tr>`;
   }).join("");
+  const curSort=document.getElementById("d127-sort")?.value||"behind";
+  document.querySelectorAll(".d127-table th[data-key]").forEach(th=>{
+    th.onclick=()=>ap127HeaderClick(th.getAttribute("data-key"));
+    const existing=th.querySelector(".d127-sarr");if(existing)existing.remove();
+    if(th.getAttribute("data-key")===curSort){const s=document.createElement("span");s.className="d127-sarr";s.textContent="▼";th.appendChild(s);}
+  });
   const bandDefs=[
     {label:"AHEAD", lo:aheadLo,   hi:leaderDone, c:"#7be9b8"},
     {label:"MID",   lo:midLo,     hi:aheadLo-1,  c:"#ffd67a"},
@@ -342,46 +412,209 @@ function buildAP127Timeline(all,curriculum,maxDate){
   const sorted=ap127PaceSort(all,maxDate);
   const wrap=document.getElementById("d127-timeline-wrap");
   if(wrap)wrap.style.height=Math.max(420,sorted.length*22)+"px";
-  const dateSet=new Set();
-  sorted.forEach(s=>(s.flown||[]).forEach(f=>{if(f.date)dateSet.add(f.date);}));
-  const labels=[...dateSet].sort();
-  const pal=["#22c55e","#38bdf8","#a78bfa","#f59e0b","#ef4444"];
-  const total=Math.max(sorted.length,1);
-  const datasets=sorted.map((s,idx)=>{
-    const seg=idx<Math.ceil(total*.2)?0:idx<Math.ceil(total*.5)?1:idx<Math.ceil(total*.75)?2:idx<Math.ceil(total*.9)?3:4;
-    const col=pal[seg];
-    const flownDates=(s.flown||[]).filter(f=>f.date).map(f=>({x:f.date,y:idx+1}));
-    return {
+  const today=ap127TodayBKK();
+  const DAY=86400000;
+  const toDayNum=ds=>{const d=new Date(ds+"T12:00:00Z");return Math.floor(d.getTime()/DAY);};
+  const allDates=[];
+  sorted.forEach(s=>(s.flown||[]).forEach(f=>{if(f.date)allDates.push(f.date);}));
+  if(!allDates.length)allDates.push(today);
+  const minDay=Math.min(...allDates.map(toDayNum));
+  const todayDay=toDayNum(today);
+  const maxDay=Math.max(todayDay,...allDates.map(toDayNum));
+  const span=Math.max(maxDay-minDay,1);
+  const rightPad=Math.max(6,Math.ceil(span*0.08));
+  const xMin=minDay-1,xMax=maxDay+rightPad;
+  const countX=maxDay+1;
+  const legend=document.getElementById("d127-phase-legend");
+  if(legend){
+    const items=[...AP127_PHASE_DEFS,AP127_PHASE_OTHER].map(d=>`<span class="d127-pc"><span class="d127-pdot" style="background:${d.c}"></span>${d.label}</span>`).join("");
+    legend.innerHTML=items+`<span class="d127-pc" style="margin-left:10px"><span class="d127-pdot" style="background:#fca5a5;border-radius:2px;width:14px;height:3px"></span>gap &gt; 7 days</span><span class="d127-pc"><span class="d127-pdot" style="background:#e6edf3;border-radius:2px;width:14px;height:3px"></span>idle 1-2d</span><span class="d127-pc"><span class="d127-pdot" style="background:#fbbf24;border-radius:2px;width:14px;height:3px"></span>idle 3-5d</span><span class="d127-pc"><span class="d127-pdot" style="background:#ff6b6b;border-radius:2px;width:14px;height:3px"></span>idle &gt;5d</span><span class="d127-pc"><span class="d127-pdot" style="background:#f59e0b;width:2px;height:10px;border-radius:0"></span>today</span>`;
+  }
+  const phaseColor=code=>ap127LessonPhase(code).c;
+  const datasets=[];
+  sorted.forEach((s,idx)=>{
+    const flights=(s.flown||[]).filter(f=>f.date).sort((a,b)=>a.date.localeCompare(b.date));
+    const pts=flights.map(f=>({x:toDayNum(f.date),y:idx+1,date:f.date,lesson:f.lesson||"-",mins:ap127FlightMins(f),sIdx:idx,studentName:s.name}));
+    const colors=flights.map(f=>phaseColor(f.lesson));
+    datasets.push({
       label:ap127ShortName(s.name),
-      data:flownDates,
+      data:pts,
       showLine:true,
-      borderColor:col,
+      borderColor:"rgba(180,180,180,0.35)",
       borderWidth:0.8,
-      pointRadius:2.4,
-      pointHoverRadius:3.6,
-      pointBackgroundColor:col,
+      pointRadius:3.2,
+      pointHoverRadius:5,
+      pointHitRadius:8,
+      pointBackgroundColor:colors,
       pointBorderWidth:0,
-      tension:0
-    };
+      tension:0,
+      segment:{
+        borderColor:ctx=>{
+          const a=ctx.p0?.raw,b=ctx.p1?.raw;
+          if(!a||!b)return "rgba(180,180,180,0.35)";
+          return (b.x-a.x)>7?"#fca5a5":"rgba(180,180,180,0.35)";
+        },
+        borderWidth:ctx=>{
+          const a=ctx.p0?.raw,b=ctx.p1?.raw;
+          if(!a||!b)return 0.8;
+          return (b.x-a.x)>7?1.4:0.8;
+        }
+      }
+    });
+    if(flights.length){
+      const lastFlightDay=pts[pts.length-1].x;
+      const idleDays=todayDay-lastFlightDay;
+      if(idleDays>0){
+        const idleColor=ap127IdleLineColor(idleDays);
+        datasets.push({
+          label:"__idle_"+idx,
+          data:[{x:lastFlightDay,y:idx+1},{x:todayDay,y:idx+1}],
+          showLine:true,
+          borderColor:idleColor,
+          borderWidth:idleDays>10?2:1.4,
+          borderDash:[3,3],
+          pointRadius:0,
+          pointHoverRadius:0,
+          pointHitRadius:0,
+          _isIdle:true,
+          _idleDays:idleDays,
+          _idleColor:idleColor
+        });
+      }
+      datasets.push({
+        label:"__count_"+idx,
+        data:[{x:countX,y:idx+1,_count:flights.length}],
+        showLine:false,
+        pointRadius:0,
+        pointHoverRadius:0,
+        pointHitRadius:0,
+        _isCount:true,
+        _countText:`· ${flights.length} flt`
+      });
+    }
   });
+  datasets.push({
+    label:"__today",
+    data:[{x:todayDay,y:0.5},{x:todayDay,y:sorted.length+0.5}],
+    showLine:true,
+    borderColor:"#f59e0b",
+    borderWidth:1.4,
+    borderDash:[5,4],
+    pointRadius:0,
+    pointHoverRadius:0,
+    pointHitRadius:0,
+    _isToday:true
+  });
+  const countPlugin={
+    id:"d127CountLabels",
+    afterDatasetsDraw(chart){
+      const{ctx}=chart;
+      ctx.save();ctx.font="9px JetBrains Mono, monospace";ctx.fillStyle="#8b949e";ctx.textAlign="left";ctx.textBaseline="middle";
+      chart.data.datasets.forEach((ds,di)=>{
+        if(!ds._isCount)return;
+        const meta=chart.getDatasetMeta(di);if(meta.hidden)return;
+        const pt=meta.data[0];if(!pt)return;
+        ctx.fillText(ds._countText,pt.x+4,pt.y);
+      });
+      ctx.restore();
+    }
+  };
+  const gapPlugin={
+    id:"d127GapLabels",
+    afterDatasetsDraw(chart){
+      const{ctx}=chart;
+      ctx.save();ctx.font="700 8.5px JetBrains Mono, monospace";ctx.textAlign="center";ctx.textBaseline="middle";
+      chart.data.datasets.forEach((ds,di)=>{
+        if(ds._isToday||ds._isCount||ds._isIdle)return;
+        const meta=chart.getDatasetMeta(di);if(meta.hidden)return;
+        const pts=meta.data||[];
+        for(let i=1;i<pts.length;i++){
+          const a=ds.data[i-1],b=ds.data[i];
+          if(!a||!b)continue;
+          const gap=b.x-a.x;
+          if(gap<=7)continue;
+          const px=(pts[i-1].x+pts[i].x)/2;
+          const py=pts[i].y-7;
+          const txt=`${gap}d`;
+          const w=ctx.measureText(txt).width+4;
+          ctx.fillStyle="rgba(13,17,23,0.85)";ctx.fillRect(px-w/2,py-5,w,10);
+          ctx.fillStyle="#fca5a5";ctx.fillText(txt,px,py);
+        }
+      });
+      ctx.restore();
+    }
+  };
+  const idlePlugin={
+    id:"d127IdleLabels",
+    afterDatasetsDraw(chart){
+      const{ctx}=chart;
+      ctx.save();ctx.font="700 8.5px JetBrains Mono, monospace";ctx.textAlign="center";ctx.textBaseline="middle";
+      chart.data.datasets.forEach((ds,di)=>{
+        if(!ds._isIdle)return;
+        const meta=chart.getDatasetMeta(di);if(meta.hidden)return;
+        const pts=meta.data||[];if(pts.length<2)return;
+        const px=(pts[0].x+pts[1].x)/2;
+        const py=pts[1].y-7;
+        const txt=`${ds._idleDays}d`;
+        const w=ctx.measureText(txt).width+4;
+        ctx.fillStyle="rgba(13,17,23,0.85)";ctx.fillRect(px-w/2,py-5,w,10);
+        ctx.fillStyle=ds._idleColor;ctx.fillText(txt,px,py);
+      });
+      ctx.restore();
+    }
+  };
+  const labelPlugin={
+    id:"d127RowLabels",
+    afterDatasetsDraw(chart){
+      const{ctx,scales:{y}}=chart;
+      if(!y||sorted.length<2)return;
+      const cell=Math.abs(y.getPixelForValue(2)-y.getPixelForValue(1));
+      ctx.save();ctx.font="7px JetBrains Mono, monospace";ctx.fillStyle="#8b949e";ctx.textAlign="right";ctx.textBaseline="middle";
+      for(let i=0;i<sorted.length;i++){
+        const py=y.getPixelForValue(i+1)+cell/2;
+        ctx.fillText(`${i+1}. ${ap127ShortName(sorted[i].name)}`,y.left+y.width-6,py);
+      }
+      ctx.restore();
+    }
+  };
   CHARTS.ap127timeline=mkC("d127-timeline",{
     type:"line",
-    data:{labels,datasets},
+    data:{datasets},
     options:{
       responsive:true,
       maintainAspectRatio:false,
+      parsing:false,
+      onClick:(evt,els,chart)=>{
+        if(!els||!els.length)return;
+        const el=els[0];const ds=chart.data.datasets[el.datasetIndex];if(!ds||ds._isToday||ds._isCount||ds._isIdle)return;
+        const raw=ds.data[el.index];if(!raw||raw.sIdx==null)return;
+        const student=sorted[raw.sIdx];if(!student)return;
+        const viewIdx=AP127_VIEW_ROWS.findIndex(s=>s.catc_id===student.catc_id);
+        if(viewIdx>=0)openAP127Drawer(viewIdx);
+      },
       plugins:{
         legend:{display:false},
         tooltip:{
+          filter:(item)=>{const ds=item.chart.data.datasets[item.datasetIndex];return !ds._isToday&&!ds._isCount&&!ds._isIdle;},
           callbacks:{
-            title:(ctx)=>ap127FmtDate(ctx[0]?.label||""),
-            label:(ctx)=>`${ctx.dataset.label}`
+            title:(ctx)=>{const r=ctx[0]?.raw;return r?ap127FmtDate(r.date):"";},
+            label:(ctx)=>{const r=ctx.raw;if(!r)return"";return `${ap127ShortName(r.studentName||ctx.dataset.label)} · ${r.lesson} · ${hm(r.mins||0)}`;}
           }
         }
       },
       scales:{
         x:{
-          ticks:{font:{family:"JetBrains Mono",size:8},color:"#6e7681",maxRotation:0,autoSkip:true,maxTicksLimit:16},
+          type:"linear",
+          min:xMin,
+          max:xMax,
+          ticks:{
+            font:{family:"JetBrains Mono",size:8},
+            color:"#6e7681",
+            maxRotation:0,
+            autoSkip:true,
+            maxTicksLimit:14,
+            callback:v=>{const d=new Date(Math.round(v)*DAY);return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short"});}
+          },
           grid:{color:"#21262d"}
         },
         y:{
@@ -394,15 +627,13 @@ function buildAP127Timeline(all,curriculum,maxDate){
             autoSkip:false,
             font:{family:"JetBrains Mono",size:7},
             color:"#8b949e",
-            callback:v=>{
-              const i=Math.round(v)-1;
-              return(i>=0&&i<sorted.length)?`${i+1}. ${ap127ShortName(sorted[i].name)}`:"";
-            }
+            callback:()=>""
           },
-          grid:{color:"#21262d"}
+          grid:{color:"#21262d",offset:false}
         }
       }
-    }
+    },
+    plugins:[countPlugin,gapPlugin,idlePlugin,labelPlugin]
   });
   const lead=sorted[0],lag=sorted.at(-1);
   document.getElementById("d127-tl-meta").textContent=lead&&lag?`Leader ${ap127ShortName(lead.name)} (${lead.done||0}/${curriculum}) · Lag ${ap127ShortName(lag.name)} (${lag.done||0}/${curriculum})`:"-";
@@ -411,7 +642,7 @@ function buildAP127Timeline(all,curriculum,maxDate){
 let AP127_RACE_SOLO=null;
 function buildAP127RaceChart(all,curriculum,maxDate){
   const racers=ap127PaceSort(all,maxDate);
-  const today=new Date().toISOString().slice(0,10);
+  const today=ap127TodayBKK();
   const plannedDates=(G.cur127||[]).map(c=>c.planned_date).filter(d=>d&&d<=today).sort();
   const dateSet=new Set(plannedDates);
   dateSet.add(today);

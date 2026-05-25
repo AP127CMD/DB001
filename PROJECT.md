@@ -1,6 +1,6 @@
 # AP127 Dashboard — Project Reference
 
-> **Last updated:** 2026-05-21  
+> **Last updated:** 2026-05-25  
 > **Repo:** https://github.com/nuguitar/AP127_NGT_001 (public — admin dashboard)  
 > **Student repo:** https://github.com/nuguitar/AP127_DashboardR1 (private — student-facing site)  
 > **Live admin site:** deployed via GitHub Pages  
@@ -256,6 +256,12 @@ Simulation sub-nav (visible only when Simulation is active):
 | `ap127IdleDays(s, asOf)` | Days since student's last flight |
 | `ap127PlanDeltaDays(s, planMap)` | Average days ahead (+) / behind (−) the curriculum plan |
 | `ap127DateDiff(a, b)` | Days between two `YYYY-MM-DD` strings |
+| `ap127TodayBKK()` | Returns `YYYY-MM-DD` for the current Bangkok-local date (UTC+7) — replaces `toISOString().slice(0,10)` to avoid off-by-one before 7 AM UTC |
+| `ap127LessonPhase(code)` | Returns `{k,label,c}` phase descriptor (CDGL/GL/IF/XV/NL/SP/M/Other) for a lesson code — drives timeline dot colors |
+| `ap127IdleLineColor(d)` | Color for idle line: `≤2d` white · `3-5d` yellow · `>5d` red. Matches the IDLE column thresholds |
+| `ap127RelDays(asOf, date)` | `"today"`, `"1d"`, `"Nd"` for the relative-date hint on Last FLT |
+| `ap127ResetSort()` | Reset Progress Ranking sort to default ("behind") + clear search |
+| `ap127HeaderClick(key)` | Set sort to `key` (data-key on the clicked TH) and re-render |
 
 ### Charts
 
@@ -379,6 +385,7 @@ Push to main
 
 | Date | Commit | Description |
 |---|---|---|
+| 2026-05-25 | — | **feat:** AP127 Detail polish — Ranking table (sticky thead, clickable sort headers with ▼ indicator, CALL SIGN column, "flew today" badge, relative Last FLT date, search matches nick/FI, header tooltips, Reset button, Bangkok-local today fix) · Timeline (proportional time axis, today line, phase-color dots, per-row flight count, light-red gap segments with day labels, idle-to-today dashed segments color-coded by idle days, click-to-drawer, names shifted ½-cell to align with dot rows, phase legend strip) |
 | 2026-05-22 | — | **feat:** AP127 Detail table overhaul — short name format, FI column, Progress + HRS DONE restored, IDLE color coding, 12-column reorder, mobile updated |
 | 2026-05-21 | `e68d967` | **feat:** exclude AUPRT lessons from all calculations and views — filtered at `parseCSV()` in both files |
 | 2026-05-21 | (branch) | **feat:** separate student-facing site — `student.html`, `push-to-kv.js`, Cloudflare KV + Worker + Pages pipeline |
@@ -442,7 +449,16 @@ Split into two jobs to avoid GitHub Pages environment protection errors on non-m
 
 ### Student Ranking Table
 
-**Column order:** RANK · NAME · CALL SIGN · FI · Progress · HRS DONE · LESSON DONE · LAST LESSON · LAST FLT · IDLE (DAYS) · DAY DELTA · HRS DELTA
+**Column order:** RANK · NAME · CALL SIGN · SE TYPE · FI · Progress · HRS DONE · LESSON DONE · LAST LESSON · LAST FLT · IDLE (DAYS) · DAY DELTA · HRS DELTA
+
+**Header & interaction (2026-05-25):**
+- `<thead>` is sticky; the wrap caps at `max-height:640px` so the header stays visible while scrolling.
+- Every `<th data-key="…">` is clickable to sort by that column; an active ▼ indicator marks the current sort. The original `<select id="d127-sort">` still works and is the source of truth (header clicks just update its value).
+- A `⟳ Reset` button in the panel header restores default sort (`behind`) and clears the search box.
+- Search now matches name, call sign (nick), or FI — type "A-VIT" or "W-CHAI" and the table filters.
+- Header tooltips on DAY Delta and HRS Delta explain the formula.
+- A green pulsing "flew today" dot appears next to the rank when `last.date === ap127TodayBKK()`.
+- The Last FLT cell shows a `(Nd)` relative-date hint beside the date.
 
 - **NAME format:** First name + first letter of last name + dot (e.g. "Akaravit K.") via `ap127ShortName()`
 - **CATC ID column:** Removed
@@ -459,11 +475,16 @@ Split into two jobs to avoid GitHub Pages environment protection errors on non-m
 - **Last FLT column:** Date of last completed flight
 - **Mobile:** Hides FI (col 4) and LAST LESSON (col 8)
 
-### Flight Timeline vs Progress
-- **Connecting lines:** Lines now connect dots for each student to visualize flight progression over time
-- **Gaps annotation:** Days between flights visible via line segments
-- **Call sign labels:** Y-axis shows call signs (e.g., "1. A-VIT") instead of full names for compactness
-- **Aligned layout:** Student names positioned at vertical midpoint of their row for better visual alignment
+### Flight Timeline vs Progress (rebuilt 2026-05-25)
+- **Proportional time axis:** linear X axis indexed by day-number (`floor(epochMs/86400000)`) — gaps between dates are now visually true, no longer evenly-spaced.
+- **Today vertical line:** dashed amber dataset spans `y∈[0.5, N+0.5]` at `x=todayDay`.
+- **Phase-colored dots:** `pointBackgroundColor` set per-flight via `ap127LessonPhase(lesson).c`. Phase legend strip above the chart documents the mapping.
+- **Gap > 7 days highlighted light red** (`#fca5a5`) via `dataset.segment.borderColor`. A `d127GapLabels` plugin draws the gap-day count (`8d`, `12d`, …) on each red segment in light red on a dark backdrop.
+- **Idle-from-last-flight segment:** per student, a dashed line from their last flight to today, colored by `ap127IdleLineColor(idleDays)` (white / yellow / red — same thresholds as the IDLE column). The `d127IdleLabels` plugin draws the idle-day count on the segment.
+- **Per-row flight count:** small `· N flt` label at the right end of each row, drawn inside the chart area (xMax has 8 % right padding to avoid clipping).
+- **Names aligned with dot rows:** built-in tick labels suppressed; `d127RowLabels` plugin draws each label at `y.getPixelForValue(i+1) + cellHeight/2` so names sit half a cell lower and align with the timeline rows between gridlines.
+- **Click a dot → open the student drawer.** `pointHitRadius:8` makes hover/click forgiving.
+- **Tooltip:** date + lesson + duration. `_isToday / _isCount / _isIdle` datasets are filtered out of tooltips and click handling.
 
 ### Actual vs Planned (Race Chart)
 - **Toggle controls:**

@@ -202,9 +202,34 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 
 ---
 
-## Pending Tasks (as of 2026-05-22)
+## Pending Tasks (as of 2026-05-25)
 
 1. **(Optional) Add Cloudflare WAF rate limiting** — Cloudflare dashboard → Security → WAF → Rate Limiting Rules on the data Worker route.
+
+### ✅ Completed (2026-05-25)
+
+- **AP127 Detail polish — Ranking table:**
+  - Sticky `<thead>` (wrap `max-height:640px`)
+  - Clickable column headers via `data-key` → `ap127HeaderClick`, with ▼ indicator on active column
+  - New columns: **CALL SIGN** (nick) between Name and SE TYPE; "flew today" pulsing green dot beside rank
+  - **Last FLT** cell shows relative date (`(7d)` / `today`)
+  - Search matches name, nick, or FI
+  - Header `title` tooltips on DAY Delta / HRS Delta
+  - **⟳ Reset** button (`#d127-reset`) in panel header → `ap127ResetSort()`
+  - **Bangkok-local today** via new `ap127TodayBKK()`; replaced two `toISOString().slice(0,10)` calls (renderAP127Detail, buildAP127RaceChart) — fixes the off-by-one before 7 AM UTC noted in PROJECT.md §16
+
+- **AP127 Detail polish — Flight Timeline:**
+  - Linear time-proportional X axis (day-number = `floor(epochMs/86400000)`); no Chart.js adapter dependency added
+  - Today amber dashed vertical line dataset
+  - **Phase-colored dots** via new `ap127LessonPhase(code)` helper (CDGL/GL/IF/XV/NL/SP/M/Other)
+  - **`d127GapLabels` plugin** — light-red (`#fca5a5`) text + segment color for gaps > 7 days
+  - **`d127IdleLabels` plugin + `_isIdle` dataset per student** — dashed line from last flight to today, color/label via `ap127IdleLineColor(d)` (≤2d white · 3-5d yellow · >5d red)
+  - **`d127CountLabels` plugin** — per-row `· N flt` flight count; rightPad on xMax keeps it inside chart area
+  - **`d127RowLabels` plugin** — draws Y-axis names at `cellHeight/2` below dot row so names align between gridlines with the timeline (built-in tick labels suppressed via `ticks.callback:()=>""`)
+  - Click a dot → opens student drawer; `pointHitRadius:8` for easier interaction
+  - Phase legend strip (`#d127-phase-legend`) above the chart
+
+- **New helpers added inside `##AP127JS_START##` markers** (so they sync to `student.html`): `ap127TodayBKK`, `ap127LessonPhase`, `ap127IdleLineColor`, `ap127RelDays`, `ap127ResetSort`, `ap127HeaderClick`, constants `AP127_PHASE_DEFS` + `AP127_PHASE_OTHER`.
 
 ### ✅ Completed (2026-05-22)
 
