@@ -422,7 +422,7 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
           <div class="sim-ctrl-lbl" id="cap-mode-lbl">Daily Flight Cap</div>
           <div class="sim-ctrl-desc" id="cap-mode-desc">Max total flights per day across all batches</div>
           <div class="sim-ctrl-val">
-            <input type="range" id="sim-cap" min="5" max="50" value="25" oninput="document.getElementById('sim-cap-v').textContent=this.value">
+            <input type="range" id="sim-cap" min="5" max="50" value="25" oninput="document.getElementById('sim-cap-v').textContent=this.value;propagateCapToWeHol(this.value)">
             <span class="sim-rv" id="sim-cap-v">25</span>
             <span style="font-size:10px;color:var(--tx3)" id="cap-mode-unit">/day</span>
           </div>
@@ -450,6 +450,24 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
             <input type="range" id="sim-hor" min="200" max="1200" step="50" value="800" oninput="document.getElementById('sim-hor-v').textContent=this.value">
             <span class="sim-rv" id="sim-hor-v">800</span>
             <span style="font-size:10px;color:var(--tx3)">days</span>
+          </div>
+        </div>
+        <div class="sim-ctrl-item">
+          <div class="sim-ctrl-lbl" id="wecap-lbl">Weekend Cap</div>
+          <div class="sim-ctrl-desc">Max flights/day on Sat & Sun · 0 disables weekend flying</div>
+          <div class="sim-ctrl-val">
+            <input type="range" id="sim-wecap" min="0" max="50" value="13" oninput="onWeHolCapInput('we')">
+            <span class="sim-rv" id="sim-wecap-v">13</span>
+            <span style="font-size:10px;color:var(--tx3)" id="wecap-unit">/day</span>
+          </div>
+        </div>
+        <div class="sim-ctrl-item">
+          <div class="sim-ctrl-lbl" id="holcap-lbl">Holiday Cap</div>
+          <div class="sim-ctrl-desc">Max flights/day on Thai public holidays · 0 disables holiday flying</div>
+          <div class="sim-ctrl-val">
+            <input type="range" id="sim-holcap" min="0" max="50" value="13" oninput="onWeHolCapInput('hol')">
+            <span class="sim-rv" id="sim-holcap-v">13</span>
+            <span style="font-size:10px;color:var(--tx3)" id="holcap-unit">/day</span>
           </div>
         </div>
       </div>
@@ -752,7 +770,7 @@ function doGet(e) {
 const DEFAULT_RELAY_URL="__RELAY_URL__";
 const ADMIN_PASSWORD_HASH="__ADMIN_HASH__";
 let ADMIN_UNLOCKED=false;
-let CFG={cap:25,n129:13,ap129start:"2026-06-01",horizon:800,hourMode:false,recents:3,upcomings:8,cardH:190,chartH:190,showRest:true,showNextTag:true,relayUrl:DEFAULT_RELAY_URL,layout:{main:"2col",batch:"3b"}};
+let CFG={cap:25,n129:13,ap129start:"2026-06-01",horizon:800,hourMode:false,weekendCap:13,holidayCap:13,_weAuto:true,_holAuto:true,recents:3,upcomings:8,cardH:190,chartH:190,showRest:true,showNextTag:true,relayUrl:DEFAULT_RELAY_URL,layout:{main:"2col",batch:"3b"}};
 let G=null,AB="ALL",calY=2026,calM=4;
 const CHARTS={};
 let AP127_VIEW_ROWS=[];
@@ -834,20 +852,40 @@ function parseCSV(text,batch){
 // ── SCHEDULER ──
 function isWD(ds){const d=new Date(ds+"T12:00:00Z"),dw=d.getUTCDay();return dw!==0&&dw!==6&&!HOL.has(ds);}
 function getWDs(s,n){const a=[];let d=new Date(s+"T12:00:00Z");while(a.length<n){const ds=d.toISOString().slice(0,10);if(isWD(ds))a.push(ds);d.setUTCDate(d.getUTCDate()+1);}return a;}
+function getOpDays(s,n,weekendCap,holidayCap,weekdayCap){
+  const a=[];let d=new Date(s+"T12:00:00Z");
+  while(a.length<n){
+    const ds=d.toISOString().slice(0,10);
+    const dw=d.getUTCDay(),isWE=dw===0||dw===6,isHol=HOL.has(ds);
+    let cap=weekdayCap;
+    if(isHol)cap=holidayCap;
+    else if(isWE)cap=weekendCap;
+    if(cap>0)a.push({ds,cap,isWE,isHol});
+    d.setUTCDate(d.getUTCDate()+1);
+  }
+  return a;
+}
 
-function runScheduler(batchData,curricula,extraBatches=[],startDate="",hourMode=false){
+function runScheduler(batchData,curricula,extraBatches=[],startDate="",hourMode=false,weekendCap=0,holidayCap=0){
   const{cap,n129,ap129start,horizon}=CFG;
-  const wds=getWDs(startDate||"2026-05-05",horizon);
+  const ops=getOpDays(startDate||"2026-05-05",horizon,weekendCap,holidayCap,cap);
+  const wds=ops.map(o=>o.ds);
   const w129=wds.findIndex(d=>d>=ap129start);
   const cur129=curricula.AP127||curricula.AP126||[];
-  // Compute virtual workday index (negative) for last-flight date relative to wds[0]
+  // Compute virtual op-day index (negative) for last-flight date relative to ops[0]
   // so eligibility gaps are respected from the real last flight, not reset to -99
   function computeLwM(ld){
     if(!ld||!wds[0])return -99;
     let cnt=0,d=new Date(ld+"T12:00:00Z");
     d.setUTCDate(d.getUTCDate()+1);
     const end=new Date(wds[0]+"T12:00:00Z");
-    while(d<=end&&cnt<=20){if(isWD(d.toISOString().slice(0,10)))cnt++;d.setUTCDate(d.getUTCDate()+1);}
+    while(d<=end&&cnt<=20){
+      const ds=d.toISOString().slice(0,10);
+      const dw=d.getUTCDay(),isWE=dw===0||dw===6,isHol=HOL.has(ds);
+      let opCap=cap;if(isHol)opCap=holidayCap;else if(isWE)opCap=weekendCap;
+      if(opCap>0)cnt++;
+      d.setUTCDate(d.getUTCDate()+1);
+    }
     return -cnt;
   }
   const iM={},lwM={},lmM={},schM={};
@@ -868,7 +906,7 @@ function runScheduler(batchData,curricula,extraBatches=[],startDate="",hourMode=
     return out.sort((a,z)=>z[0]-a[0]);
   }
   wds.forEach((ds,wi)=>{
-    let slots=cap;
+    let slots=ops[wi].cap;
     ["AP124","AP126","AP127"].forEach(b=>{
       if(slots<=0)return;const cur=curricula[b]||[];
       for(const[,i]of elig(b,cur,wi)){if(slots<=0)break;const ix=iM[b][i];if(ix>=cur.length)continue;const p=cur[ix];const cost=hourMode?p.planned_mins/60:1;if(slots<cost)continue;schM[b][i].push([ds,p.lesson,p.planned_mins]);lwM[b][i]=wi;lmM[b][i]=p.planned_mins;iM[b][i]=ix+1;slots-=cost;}
@@ -893,7 +931,7 @@ function runScheduler(batchData,curricula,extraBatches=[],startDate="",hourMode=
     if(b==="AP129")return Array.from({length:n129},(_,i)=>({catc_id:"AP129-"+String(i+1).padStart(2,"0"),name:"Student "+String(i+1).padStart(2,"0"),batch:"AP129",done:0,total:cur.length,remaining:cur.length,pct:0,flown:[],next_lesson:cur[0]?.lesson||"",planned:(sd[i]||[]).map(p=>Array.isArray(p)?{date:p[0],lesson:p[1],mins:p[2]}:p),planned_total:(sd[i]||[]).length,finish:(sd[i]||[]).at(-1)?.[0]||(sd[i]||[]).at(-1)?.date||"N/A"}));
     return(st||[]).map((s,i)=>{const pl=sd[i]||[];const pl2=pl.map(p=>Array.isArray(p)?{date:p[0],lesson:p[1],mins:p[2]}:p);return{...s,planned:pl2,planned_total:pl2.length,finish:pl2.at(-1)?.date||pl.at(-1)?.[0]||(s.remaining===0?"COMPLETE":"N/A")};});
   }
-  const result={ap124:mkSt("AP124",batchData.AP124,curricula.AP124||[],schM.AP124),ap126:mkSt("AP126",batchData.AP126,curricula.AP126||[],schM.AP126),ap127:mkSt("AP127",batchData.AP127,curricula.AP127||[],schM.AP127),ap129:mkSt("AP129",[],cur129,schM.AP129),monthly,cap,hourMode,cur124:curricula.AP124,cur126:curricula.AP126,cur127:curricula.AP127};
+  const result={ap124:mkSt("AP124",batchData.AP124,curricula.AP124||[],schM.AP124),ap126:mkSt("AP126",batchData.AP126,curricula.AP126||[],schM.AP126),ap127:mkSt("AP127",batchData.AP127,curricula.AP127||[],schM.AP127),ap129:mkSt("AP129",[],cur129,schM.AP129),monthly,cap,hourMode,weekendCap,holidayCap,cur124:curricula.AP124,cur126:curricula.AP126,cur127:curricula.AP127};
   extraBatches.forEach(b=>{
     result["extra_"+b.name]=Array.from({length:b.n||0},(_,i)=>({catc_id:b.name+"-"+String(i+1).padStart(2,"0"),name:"Student "+String(i+1).padStart(2,"0"),batch:b.name,done:0,total:cur129.length,remaining:cur129.length,pct:0,flown:[],next_lesson:cur129[0]?.lesson||"",planned:(schM[b.name][i]||[]).map(p=>Array.isArray(p)?{date:p[0],lesson:p[1],mins:p[2]}:p),planned_total:(schM[b.name][i]||[]).length,finish:(schM[b.name][i]||[]).at(-1)?.[0]||"N/A"}));
   });
@@ -1079,16 +1117,19 @@ function runSimulation(){
   CFG.horizon=+(horEl?.value)||800;
   CFG.ap129start=s129El?.value||"2026-06-01";
   CFG.n129=13;
+  const weEl=document.getElementById("sim-wecap"),holEl=document.getElementById("sim-holcap");
+  CFG.weekendCap=Math.max(0,+(weEl?.value)||0);
+  CFG.holidayCap=Math.max(0,+(holEl?.value)||0);
   const bd={AP124:G.ap124||[],AP126:G.ap126||[],AP127:G.ap127||[]};
   const cur={AP124:G.cur124||[],AP126:G.cur126||[],AP127:G.cur127||[]};
   const t0=Date.now();
   const _d=new Date(Date.now()+7*3600000);_d.setUTCDate(_d.getUTCDate()+1);
   const tomorrowBKK=_d.toISOString().slice(0,10);
-  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,tomorrowBKK,CFG.hourMode||false);
+  SIM_G=runScheduler(bd,cur,EXTRA_BATCHES,tomorrowBKK,CFG.hourMode||false,CFG.weekendCap,CFG.holidayCap);
   SIM_G.ap127?.forEach((s,i)=>{s.nick=AP127_NICKS[i]||"";s.fi=AP127_FI[i]||"";s.se=AP127_SE[i]||"";});
   const ms=Date.now()-t0;
   const statusEl=document.getElementById("sim-status");
-  if(statusEl)statusEl.textContent=`Done in ${ms}ms · cap ${CFG.cap}/day · ${CFG.horizon}wd horizon`;
+  if(statusEl)statusEl.textContent=`Done in ${ms}ms · cap ${CFG.cap}/day · WE ${CFG.weekendCap} · Hol ${CFG.holidayCap} · ${CFG.horizon}wd horizon`;
   renderSimFinish();
   buildSimCapacityChart();
   toast("Simulation complete","ok");
@@ -1099,8 +1140,21 @@ function renderSimulation(){
   if(capEl){capEl.value=CFG.cap;document.getElementById("sim-cap-v").textContent=CFG.cap;}
   if(horEl){horEl.value=CFG.horizon;document.getElementById("sim-hor-v").textContent=CFG.horizon;}
   if(s129El)s129El.value=CFG.ap129start;
+  const weEl=document.getElementById("sim-wecap"),holEl=document.getElementById("sim-holcap");
+  if(weEl){weEl.value=CFG.weekendCap;document.getElementById("sim-wecap-v").textContent=CFG.weekendCap;}
+  if(holEl){holEl.value=CFG.holidayCap;document.getElementById("sim-holcap-v").textContent=CFG.holidayCap;}
   renderSimExtraList();
   if(!SIM_G)runSimulation();
+}
+function propagateCapToWeHol(capVal){
+  const cap=+capVal||0;
+  const half=Math.round(cap*0.5);
+  if(CFG._weAuto){const el=document.getElementById("sim-wecap");if(el){el.value=half;document.getElementById("sim-wecap-v").textContent=half;CFG.weekendCap=half;}}
+  if(CFG._holAuto){const el=document.getElementById("sim-holcap");if(el){el.value=half;document.getElementById("sim-holcap-v").textContent=half;CFG.holidayCap=half;}}
+}
+function onWeHolCapInput(kind){
+  if(kind==="we"){const el=document.getElementById("sim-wecap");document.getElementById("sim-wecap-v").textContent=el.value;CFG.weekendCap=+el.value;CFG._weAuto=false;}
+  else{const el=document.getElementById("sim-holcap");document.getElementById("sim-holcap-v").textContent=el.value;CFG.holidayCap=+el.value;CFG._holAuto=false;}
 }
 function renderSimFinish(){
   if(!SIM_G)return;
@@ -1148,18 +1202,52 @@ function toggleHourMode(isHour){
   if(isHour){capEl.max="200";capEl.step="5";capEl.value=40;}
   else{capEl.max="50";capEl.step="1";capEl.value=25;}
   document.getElementById("sim-cap-v").textContent=capEl.value;
+  const weEl=document.getElementById("sim-wecap"),holEl=document.getElementById("sim-holcap");
+  if(weEl&&holEl){
+    if(isHour){weEl.max="200";weEl.step="5";holEl.max="200";holEl.step="5";document.getElementById("wecap-unit").textContent="hrs/day";document.getElementById("holcap-unit").textContent="hrs/day";}
+    else{weEl.max="50";weEl.step="1";holEl.max="50";holEl.step="1";document.getElementById("wecap-unit").textContent="/day";document.getElementById("holcap-unit").textContent="/day";}
+    CFG._weAuto=true;CFG._holAuto=true;
+    propagateCapToWeHol(capEl.value);
+  }
+}
+function buildHistoricalMonthly(isHour){
+  const rec=collectHistoricalFlights();
+  const acc={};const daySet={};
+  rec.forEach(r=>{
+    const m=r.date.slice(0,7);
+    if(!acc[m])acc[m]={t:0,"124":0,"126":0,"127":0,"129":0};
+    if(!daySet[m])daySet[m]=new Set();
+    daySet[m].add(r.date);
+    const val=isHour?(r.mins||0)/60:1;
+    acc[m].t+=val;
+    const k=r.batch.replace("AP","");
+    acc[m][k]=(acc[m][k]||0)+val;
+  });
+  const out={};
+  Object.entries(acc).forEach(([m,v])=>{
+    const d=daySet[m]?.size||1;
+    out[m]={t:+(v.t/d).toFixed(1),"124":+(v["124"]/d).toFixed(1),"126":+(v["126"]/d).toFixed(1),"127":+(v["127"]/d).toFixed(1),"129":+(v["129"]/d).toFixed(1),_actualDays:d};
+  });
+  return out;
 }
 function buildSimCapacityChart(){
   if(!SIM_G)return;
-  const monthly=SIM_G.monthly||{};
-  const M=Object.keys(monthly).sort();if(!M.length)return;
-  const cap=CFG.cap;
   const isHour=SIM_G.hourMode||false;
+  const proj=SIM_G.monthly||{};
+  const hist=buildHistoricalMonthly(isHour);
+  const todayM=ap127TodayBKK().slice(0,7);
+  const merged={};const srcMap={};
+  Object.keys(hist).forEach(m=>{if(m<=todayM){merged[m]=hist[m];srcMap[m]="actual";}});
+  Object.keys(proj).forEach(m=>{if(m>todayM&&!merged[m]){merged[m]=proj[m];srcMap[m]="projected";}});
+  // Edge: if current month also has projection but no actuals, fall back to projection
+  if(!merged[todayM]&&proj[todayM]){merged[todayM]=proj[todayM];srcMap[todayM]="projected";}
+  const M=Object.keys(merged).sort();if(!M.length)return;
+  const cap=CFG.cap;
   const unit=isHour?"hrs":"flights";
   const lbl=M.map(m=>{const[y,mo]=m.split("-");return["","J","F","M","A","M","J","J","A","S","O","N","D"][+mo]+"'"+y.slice(2);});
-  const v=k=>M.map(m=>(monthly[m]||{})[k]||0);
+  const v=k=>M.map(m=>(merged[m]||{})[k]||0);
   const extras=SIM_G.extra_batches||[];
-  const totals=M.map(m=>(monthly[m]||{}).t||0);
+  const totals=M.map(m=>(merged[m]||{}).t||0);
   const datasets=[
     {label:"AP124",data:v("124"),backgroundColor:"rgba(192,132,252,.75)",stack:"s"},
     {label:"AP126",data:v("126"),backgroundColor:"rgba(56,189,248,.75)",stack:"s"},
@@ -1168,18 +1256,17 @@ function buildSimCapacityChart(){
     ...extras.map(b=>({label:b.name,data:v(b.name),backgroundColor:b.color+"bb",stack:"s"})),
     {label:"Cap",data:Array(lbl.length).fill(cap),type:"line",borderColor:"#f59e0b",borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false}
   ];
-  const todayM=new Date().toISOString().slice(0,7);
   const todayIdx=M.indexOf(todayM);
   const titleEl=document.getElementById("sim-cap-title");
-  if(titleEl)titleEl.textContent=isHour?"Monthly Flight Hours — avg hrs/workday per batch":"Monthly Flight Capacity — avg flights/workday per batch";
+  if(titleEl)titleEl.textContent=isHour?"Monthly Flight Hours — actual past + projected future":"Monthly Flight Capacity — actual past + projected future";
   const subEl=document.getElementById("sim-cap-sub");
-  if(subEl)subEl.textContent=`Stacked by batch · dashed = ${cap} ${isHour?"hrs":""}/day cap${extras.length?" · "+extras.map(b=>b.name).join(", "):""}`;
+  if(subEl)subEl.textContent=`Past months = actual flights (incl. weekends/holidays) · Future = projection · WE cap ${SIM_G.weekendCap||0} · Hol cap ${SIM_G.holidayCap||0} · dashed = ${cap} ${isHour?"hrs":""}/day weekday cap${extras.length?" · "+extras.map(b=>b.name).join(", "):""}`;
   CHARTS.simCap=mkC("c-sim-cap",{type:"bar",data:{labels:lbl,datasets},options:{...copts(
     {stacked:true,grid:{color:"#21262d"}},
-    {stacked:true,max:Math.max(cap+5,Math.max(...totals,0)+3),grid:{color:"#21262d"},title:{display:true,text:isHour?"avg hrs / workday":"avg flights / workday",color:"#8b949e",font:{size:9,family:"JetBrains Mono, monospace"}}}
+    {stacked:true,max:Math.max(cap+5,Math.max(...totals,0)+3),grid:{color:"#21262d"},title:{display:true,text:isHour?"avg hrs / operating day":"avg flights / operating day",color:"#8b949e",font:{size:9,family:"JetBrains Mono, monospace"}}}
   ),plugins:{...copts().plugins,catcNowLine:{enabled:true,idx:todayIdx},tooltip:{callbacks:{
-    title:([ctx])=>M[ctx.dataIndex]||ctx.label,
-    afterBody:([ctx])=>`Total: ${(totals[ctx.dataIndex]||0).toFixed(1)} ${unit} / Cap: ${cap}${isHour?" hrs":""}/day`
+    title:([ctx])=>{const m=M[ctx.dataIndex]||ctx.label;return `${m} · ${srcMap[m]==="actual"?"ACTUAL":"PROJECTED"}`;},
+    afterBody:([ctx])=>{const m=M[ctx.dataIndex];const extra=srcMap[m]==="actual"?` · ${merged[m]?._actualDays||0} flight days`:"";return `Total: ${(totals[ctx.dataIndex]||0).toFixed(1)} ${unit} / Cap: ${cap}${isHour?" hrs":""}/day${extra}`;}
   }}}}});
 }
 function showSimSub(name,el){
@@ -1786,13 +1873,17 @@ function renderPerformance(){
   const recentN=+(document.getElementById("pf-recent-n")?.value||20);
   const rec=recAll.filter(r=>r.date>=from&&r.date<=to&&(batch==="ALL"||r.batch===batch));
   const bizDates=perfBusinessDates(from,to);
+  const opsSet=new Set(bizDates);
+  rec.forEach(r=>opsSet.add(r.date));
+  const allDates=[...opsSet].sort();
+  const extraNonBiz=allDates.filter(d=>!bizDates.includes(d)).length;
   const filterNote=document.getElementById("pf-filter-note");
   if(filterNote){
-    filterNote.textContent=`Filter: ${batch} | ${ap127FmtDate(from)} → ${ap127FmtDate(to)} | ${bizDates.length} business days`;
+    filterNote.textContent=`Filter: ${batch} | ${ap127FmtDate(from)} → ${ap127FmtDate(to)} | ${allDates.length} operating days${extraNonBiz?` (incl. ${extraNonBiz} weekend/holiday day${extraNonBiz>1?"s":""} with flights)`:""}`;
   }
   const recentTitle=document.getElementById("pf-recent-title");
   if(recentTitle)recentTitle.textContent=`Recent ${recentN} Operating Days`;
-  if(!bizDates.length){
+  if(!allDates.length){
     ["pf-total-flights","pf-total-hours","pf-days","pf-avg","pf-peak","pf-med","pf-avg-h","pf-best-wd","pf-top-batch"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="-";});
     const sub=document.getElementById("pf-peak-sub");if(sub)sub.textContent="-";
     const sub2=document.getElementById("pf-best-wd-sub");if(sub2)sub2.textContent="-";
@@ -1804,9 +1895,9 @@ function renderPerformance(){
   }
   const totalFlights=rec.length,totalHours=rec.reduce((a,r)=>a+r.mins,0)/60;
   const dm={};
-  bizDates.forEach(d=>{dm[d]={n:0,h:0,b:{AP124:0,AP126:0,AP127:0,AP129:0}};});
-  rec.forEach(r=>{if(!dm[r.date])return;dm[r.date].n++;dm[r.date].h+=r.mins/60;dm[r.date].b[r.batch]=(dm[r.date].b[r.batch]||0)+(r.mins/60);});
-  const dates=[...bizDates];
+  allDates.forEach(d=>{dm[d]={n:0,h:0,b:{AP124:0,AP126:0,AP127:0,AP129:0}};});
+  rec.forEach(r=>{if(!dm[r.date])dm[r.date]={n:0,h:0,b:{AP124:0,AP126:0,AP127:0,AP129:0}};dm[r.date].n++;dm[r.date].h+=r.mins/60;dm[r.date].b[r.batch]=(dm[r.date].b[r.batch]||0)+(r.mins/60);});
+  const dates=[...allDates];
   const days=dates.length,avg=totalFlights/days;
   const med=(()=>{const a=dates.map(d=>dm[d].n).sort((x,y)=>x-y);const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;})();
   const avgHoursDay=totalHours/days;

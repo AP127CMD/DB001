@@ -167,11 +167,12 @@ AP127_NICKS = ["A-VIT","A-SORN","A-RUT","B-SET","J-YU","K-PONG","K-YA","K-KORN",
 
 > **Note:** Lessons whose name starts with `AUPRT` (case-insensitive) are excluded at the `parseCSV` stage and never reach the scheduler or any view. See §4 Data Model note.
 
-**Signature:** `runScheduler(batchData, curricula, extraBatches=[], startDate="", hourMode=false)`
+**Signature:** `runScheduler(batchData, curricula, extraBatches=[], startDate="", hourMode=false, weekendCap=0, holidayCap=0)`
 
 - Generates planned lesson dates for all batches (AP124, AP126, AP127, AP129, extra batches).
 - **Schedule start:** Tomorrow (Bangkok time, UTC+7). All planned lessons are strictly future. `update-cache.js` and the Simulation both compute tomorrow's Bangkok date at runtime.
-- **Daily cap:** Configurable. In **flights mode** (default): max N flights/day. In **hours mode**: max N flight-hours/day; each lesson costs `planned_mins / 60` hours and shorter lessons can fill remaining capacity after larger ones are skipped.
+- **Operating-day stream:** Replaces the old workday-only stream with `getOpDays(start, n, weekendCap, holidayCap, weekdayCap)` which returns `[{ds, cap, isWE, isHol}]`. Days with `cap===0` are skipped entirely (so a weekendCap of 0 reproduces the prior behavior). The 1-/2-day rest gap (`lwM`) counts operating-day indices, so semantics are preserved when caps are 0. `update-cache.js` keeps `weekendCap=0, holidayCap=0` to avoid changing server-rebuilt `cache.json`.
+- **Per-day cap:** Each op-day exposes its own `cap`. Weekday cap comes from `CFG.cap`; Sat/Sun use `CFG.weekendCap`; Thai holidays use `CFG.holidayCap`. Hours mode applies the same per-day limit in hours.
 - **Priority order:** AP124 → AP126 → AP127 → AP129 → Extra batches (in added order).
 - **Eligibility gap:** Students who flew a lesson ≥ 120 min must wait 2 workdays; others wait 1. Initialized via `computeLwM(lastFlightDate, wds[0])` which counts actual workdays between the last real flight and the first scheduled workday — so the gap is correctly enforced from the true last flight, not reset arbitrarily.
 - **AP129** starts on `CFG.ap129start` (default `2026-06-01`); uses AP127 curriculum. Fixed at 13 students.
@@ -385,6 +386,7 @@ Push to main
 
 | Date | Commit | Description |
 |---|---|---|
+| 2026-05-25 | — | **feat:** Simulation — weekend/holiday support. Scheduler gains `weekendCap` and `holidayCap` params (per-day cap); Simulation page has new sliders defaulting to 50 % of weekday cap. Capacity chart now shows actual past months (from `collectHistoricalFlights`, denominator = unique flight days incl. weekends/holidays) merged with future projection, NOW line dividing the two. School's Performance page no longer drops weekend/holiday flights from its day map. |
 | 2026-05-25 | — | **feat:** AP127 Detail polish — Ranking table (sticky thead, clickable sort headers with ▼ indicator, CALL SIGN column, "flew today" badge, relative Last FLT date, search matches nick/FI, header tooltips, Reset button, Bangkok-local today fix) · Timeline (proportional time axis, today line, phase-color dots, per-row flight count, light-red gap segments with day labels, idle-to-today dashed segments color-coded by idle days, click-to-drawer, names shifted ½-cell to align with dot rows, phase legend strip) |
 | 2026-05-22 | — | **feat:** AP127 Detail table overhaul — short name format, FI column, Progress + HRS DONE restored, IDLE color coding, 12-column reorder, mobile updated |
 | 2026-05-21 | `e68d967` | **feat:** exclude AUPRT lessons from all calculations and views — filtered at `parseCSV()` in both files |
@@ -508,10 +510,12 @@ Split into two jobs to avoid GitHub Pages environment protection errors on non-m
 ## 15. Simulation Page (2026-05-20)
 
 ### Scheduler Parameters
-- **Daily Flight Cap** / **Daily Hour Cap** — slider (5–50 for flights, 10–200 for hours)
+- **Daily Flight Cap** / **Daily Hour Cap** — slider (5–50 for flights, 10–200 for hours). Used as the weekday cap.
 - **Cap Mode toggle** — Flights ↔ Hours. In hours mode the slider label, unit, and default reset; scheduler uses `planned_mins/60` per lesson
 - **AP129 Start Date** — text input `YYYY-MM-DD`; AP129 always uses 13 students and AP127 curriculum
 - **Planning Horizon** — slider 200–1 200 workdays from tomorrow
+- **Weekend Cap** (added 2026-05-25) — slider 0–50 (0–200 in hours mode). Max flights/hours scheduled per Saturday/Sunday. Default = 50 % of weekday cap (auto-tracks changes to Daily Cap until the user touches the slider, which sets `CFG._weAuto=false`). `0` = no weekend flying.
+- **Holiday Cap** (added 2026-05-25) — slider 0–50 (0–200 in hours mode). Same semantics as Weekend Cap but applies to Thai public-holiday dates in `HOL`. `0` = no holiday flying.
 - **Additional Batches** — add/remove extra batches (name, N students, start date); all use AP127 curriculum; priority after AP129
 
 ### How the Simulation Works panel
@@ -521,7 +525,12 @@ Collapsible `<details>` element. Explains: schedule start, priority order, daily
 One card per batch (AP124, AP126, AP127, AP129, each extra batch). Shows: batch name, projected last finish date, progress bar, Done %, First finishes date, Months to go, Lessons left.
 
 ### Capacity chart (`c-sim-cap`)
-Stacked bar by batch per month. In flights mode: avg flights/workday. In hours mode: avg hrs/workday. Dashed line = daily cap. "NOW" vertical marker.
+Stacked bar by batch per month — **actual past + projected future merged on a single timeline** (added 2026-05-25):
+- Months `≤ today` use `buildHistoricalMonthly()` over `collectHistoricalFlights()`. Denominator = count of unique calendar dates in the month with ≥ 1 flight, so weekend/holiday flying days are counted.
+- Months `> today` use the scheduler's `SIM_G.monthly` projection (which honors the new Weekend / Holiday caps).
+- Tooltip title includes the source (`ACTUAL` / `PROJECTED`); for actual months, it also reports the number of flight days.
+- The existing `catcNowLine` plugin renders a vertical "NOW" marker between past actuals and future projection.
+- Dashed line = weekday cap. Sub-title summarises active WE / Hol caps.
 
 ### Global state
 ```js

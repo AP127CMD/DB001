@@ -208,6 +208,16 @@ KV binding: variable name `KV` → namespace `AP127_STUDENT_DATA`
 
 ### ✅ Completed (2026-05-25)
 
+- **Simulation — weekend/holiday support:**
+  - `runScheduler` signature now `(batchData, curricula, extraBatches, startDate, hourMode, weekendCap=0, holidayCap=0)`.
+  - New helper `getOpDays(start, n, weekendCap, holidayCap, weekdayCap)` replaces `getWDs` inside `runScheduler` — returns operating-day objects with per-day cap; `cap===0` days are skipped.
+  - `computeLwM` updated to count operating days (not just workdays) so rest-gap math survives non-zero weekend/holiday caps.
+  - Two new sliders on Simulation page: `sim-wecap` and `sim-holcap`. Defaults = 50 % of weekday cap and auto-track changes to Daily Cap via `propagateCapToWeHol()` until the user touches them (`CFG._weAuto`/`_holAuto`).
+  - `buildSimCapacityChart` rewritten — merges `buildHistoricalMonthly()` (actual past) with `SIM_G.monthly` (future) on the same axis. NOW line sits between actual and projected. Tooltip labels each column ACTUAL or PROJECTED.
+  - `renderPerformance` no longer drops weekend/holiday flights — seeds its day map from `bizDates ∪ rec.dates`; filter-note now reports "incl. N weekend/holiday days with flights".
+  - `update-cache.js` left at default `weekendCap=0, holidayCap=0` so server-rebuilt `cache.json` behavior is unchanged.
+  - All changes are outside the `##AP127*##` markers, so `student.html` is untouched.
+
 - **AP127 Detail polish — Ranking table:**
   - Sticky `<thead>` (wrap `max-height:640px`)
   - Clickable column headers via `data-key` → `ap127HeaderClick`, with ▼ indicator on active column
