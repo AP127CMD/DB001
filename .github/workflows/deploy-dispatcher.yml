@@ -1,0 +1,25 @@
+name: Deploy Dispatcher Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dispatcher/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: dispatcher
+          secrets: |
+            GITHUB_PAT
+        env:
+          GITHUB_PAT: ${{ secrets.DISPATCHER_GITHUB_PAT }}
