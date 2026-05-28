@@ -8,28 +8,26 @@ export default {
     };
     const body = JSON.stringify({ ref: 'main' });
 
-    if (event.cron === '*/5 * * * *') {
-      const res = await fetch(
-        'https://api.github.com/repos/nuguitar/AP127_NGT_001/actions/workflows/update-cache.yml/dispatches',
-        { method: 'POST', headers, body }
-      );
-      if (!res.ok) {
-        console.error(`NGT_001 dispatch failed: ${res.status} ${await res.text()}`);
-      } else {
-        console.log('Dispatched AP127_NGT_001 update-cache.yml');
-      }
-    }
+    const targets = [
+      {
+        url: 'https://api.github.com/repos/nuguitar/AP127_NGT_001/actions/workflows/update-cache.yml/dispatches',
+        label: 'AP127_NGT_001 update-cache.yml',
+      },
+      {
+        url: 'https://api.github.com/repos/nuguitar/AP127_Command_Center/actions/workflows/fetch_schedule.yml/dispatches',
+        label: 'AP127_Command_Center fetch_schedule.yml',
+      },
+    ];
 
-    if (event.cron === '*/30 * * * *') {
-      const res = await fetch(
-        'https://api.github.com/repos/nuguitar/AP127_Command_Center/actions/workflows/fetch_schedule.yml/dispatches',
-        { method: 'POST', headers, body }
-      );
-      if (!res.ok) {
-        console.error(`Command_Center dispatch failed: ${res.status} ${await res.text()}`);
-      } else {
-        console.log('Dispatched AP127_Command_Center fetch_schedule.yml');
-      }
-    }
+    await Promise.all(
+      targets.map(async ({ url, label }) => {
+        const res = await fetch(url, { method: 'POST', headers, body });
+        if (!res.ok) {
+          console.error(`${label} dispatch failed: ${res.status} ${await res.text()}`);
+        } else {
+          console.log(`Dispatched ${label}`);
+        }
+      })
+    );
   },
 };
