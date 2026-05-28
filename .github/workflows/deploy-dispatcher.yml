@@ -22,4 +22,4 @@ jobs:
           secrets: |
             GITHUB_PAT
         env:
-          GITHUB_PAT: ${{ secrets.DISPATCHER_GITHUB_PAT }}
+          GITHUB_PAT: ${{ secrets.GH_PAT_DASHBOARDR1 }}
