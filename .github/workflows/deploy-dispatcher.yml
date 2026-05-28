@@ -13,13 +13,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          workingDirectory: dispatcher
-          secrets: |
-            GITHUB_PAT
+      - name: Install Wrangler
+        run: npm install -g wrangler@4
+
+      # Deploy the worker script itself.
+      - name: Deploy Worker
+        working-directory: dispatcher
+        run: wrangler deploy
         env:
-          GITHUB_PAT: ${{ secrets.GH_PAT_DASHBOARDR1 }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+      # Upload the GitHub PAT as a Worker secret so the Worker can call
+      # workflow_dispatch. This requires CF_API_TOKEN to have Workers Scripts:Edit
+      # permission. If this step fails, set GITHUB_PAT manually once via:
+      #   Cloudflare Dashboard → Workers → ap127-dispatcher → Settings → Variables
+      - name: Upload GITHUB_PAT secret
+        working-directory: dispatcher
+        continue-on-error: true
+        run: echo "$GH_PAT" | wrangler secret put GITHUB_PAT
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          GH_PAT: ${{ secrets.GH_PAT_DASHBOARDR1 }}
