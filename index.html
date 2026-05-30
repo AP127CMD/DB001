@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>AP127 Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Nunito:wght@300;400;500;600;700&display=swap');
 :root{
@@ -609,12 +612,17 @@ details.sim-info-panel[open] summary::after{transform:rotate(90deg);}
       </div>
     </div>
     <div class="d127-panel">
-      <div class="d127-h">
+      <div class="d127-h" style="flex-wrap:wrap;gap:6px">
         <span class="d127-t">Combined Progress vs Plan</span>
-        <div class="cpv-filters">
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
           <button class="cpv-btn" data-f="today"   onclick="setCPVFilter('today')">To Today</button>
           <button class="cpv-btn" data-f="plan"    onclick="setCPVFilter('plan')">To Plan End</button>
           <button class="cpv-btn sel" data-f="proj" onclick="setCPVFilter('proj')">To Proj. End</button>
+          <span style="width:1px;height:14px;background:var(--bd);display:inline-block;margin:0 2px"></span>
+          <button class="cpv-btn cpv-mode sel" data-m="lessons" onclick="setCPVMode('lessons')">Lessons</button>
+          <button class="cpv-btn cpv-mode"     data-m="hours"   onclick="setCPVMode('hours')">Hours</button>
+          <span style="width:1px;height:14px;background:var(--bd);display:inline-block;margin:0 2px"></span>
+          <button class="cpv-btn" onclick="CHARTS.ap127combined?.resetZoom()" title="Reset zoom">⟳ Zoom</button>
         </div>
       </div>
       <div class="d127-body">
@@ -1858,9 +1866,15 @@ function buildAP127OverallChart(all,curriculum,maxDate){
   });
 }
 let CPV_FILTER='proj';
+let CPV_MODE='lessons';
 function setCPVFilter(f){
   CPV_FILTER=f;
-  document.querySelectorAll('.cpv-btn').forEach(b=>b.classList.toggle('sel',b.dataset.f===f));
+  document.querySelectorAll('.cpv-btn[data-f]').forEach(b=>b.classList.toggle('sel',b.dataset.f===f));
+  buildAP127CombinedChart();
+}
+function setCPVMode(m){
+  CPV_MODE=m;
+  document.querySelectorAll('.cpv-mode').forEach(b=>b.classList.toggle('sel',b.dataset.m===m));
   buildAP127CombinedChart();
 }
 function buildAP127CombinedChart(){
@@ -1868,108 +1882,126 @@ function buildAP127CombinedChart(){
   const today=ap127TodayBKK();
   const n=all.length;
   const curriculum=G.cur127||[];
-  const totalLessons=curriculum.length||101;
-  const totalPlan=totalLessons*n;
+  const isHrs=CPV_MODE==='hours';
+  const unit=isHrs?'hrs':'lessons';
+
+  /* ── Lesson→mins map ── */
+  const lessonsMap={};curriculum.forEach(c=>{lessonsMap[c.lesson]=c.planned_mins||0;});
 
   /* ── Actual by date ── */
   const actualByDate={};
-  all.forEach(s=>(s.flown||[]).forEach(f=>{if(f.date&&f.date<=today)actualByDate[f.date]=(actualByDate[f.date]||0)+1;}));
-  const totalDone=all.reduce((a,s)=>a+(s.done||0),0);
+  all.forEach(s=>(s.flown||[]).forEach(f=>{
+    if(!f.date||f.date>today)return;
+    const v=isHrs?(ap127FlightMins(f)||lessonsMap[f.lesson]||0)/60:1;
+    actualByDate[f.date]=(actualByDate[f.date]||0)+v;
+  }));
+  const totalDone=isHrs?all.reduce((a,s)=>a+ap127Hours(s),0):all.reduce((a,s)=>a+(s.done||0),0);
   const actualDates=Object.keys(actualByDate).sort();
   const firstDate=actualDates[0]||today;
 
   /* ── Plan by date (curriculum × n) ── */
   const planByDate={};
-  curriculum.forEach(c=>{if(c.planned_date)planByDate[c.planned_date]=(planByDate[c.planned_date]||0)+n;});
+  curriculum.forEach(c=>{
+    if(!c.planned_date)return;
+    const v=isHrs?(c.planned_mins||0)*n/60:n;
+    planByDate[c.planned_date]=(planByDate[c.planned_date]||0)+v;
+  });
+  const totalPlan=isHrs?curriculum.reduce((a,c)=>a+(c.planned_mins||0),0)*n/60:(curriculum.length||101)*n;
   const planDates=Object.keys(planByDate).sort();
   const planEnd=planDates.at(-1)||today;
 
-  /* ── Pace ── */
+  /* ── Pace (30d rolling) ── */
   const daysSinceStart=Math.max(1,Math.round((new Date(today+'T12:00:00Z')-new Date(firstDate+'T12:00:00Z'))/86400000));
   const thirtyAgo=new Date(new Date(today+'T12:00:00Z').getTime()-30*86400000).toISOString().slice(0,10);
   const recent30=Object.entries(actualByDate).filter(([d])=>d>=thirtyAgo).reduce((a,[,v])=>a+v,0);
-  const pace30=recent30/30;
-  const paceOverall=totalDone/daysSinceStart;
-  const pace=pace30>0?pace30:paceOverall;
+  const pace=Math.max(recent30>0?recent30/30:totalDone/daysSinceStart,0.001);
 
   /* ── Projected finish ── */
-  const remaining=totalPlan-totalDone;
-  const projDaysLeft=remaining/Math.max(pace,0.001);
+  const remaining=Math.max(totalPlan-totalDone,0);
+  const projDaysLeft=remaining/pace;
   const projEndDate=new Date(new Date(today+'T12:00:00Z').getTime()+projDaysLeft*86400000).toISOString().slice(0,10);
 
-  /* ── Plan should-be-done by today ── */
+  /* ── Variance vs plan ── */
   const planByToday=Math.min(planDates.filter(d=>d<=today).reduce((a,d)=>a+(planByDate[d]||0),0),totalPlan);
   const variance=totalDone-planByToday;
 
-  /* ── End date by filter ── */
+  /* ── End date ── */
   const endDate=CPV_FILTER==='today'?today:CPV_FILTER==='plan'?planEnd:[planEnd,projEndDate].sort().at(-1);
 
-  /* ── Build sparse date labels ── */
-  const dateSet=new Set([firstDate,today,endDate]);
-  actualDates.forEach(d=>dateSet.add(d));
-  planDates.filter(d=>d<=endDate).forEach(d=>dateSet.add(d));
-  const dCur=new Date(firstDate.slice(0,7)+'-01T12:00:00Z');
-  const dEnd=new Date(endDate+'T12:00:00Z');
-  while(dCur<=dEnd){dateSet.add(dCur.toISOString().slice(0,10));dCur.setUTCMonth(dCur.getUTCMonth()+1);}
-  const labels=[...dateSet].filter(d=>d>=firstDate&&d<=endDate).sort();
-
-  /* ── Cumulative series ── */
-  let rAct=0,rPlan=0;
-  const cumAct=[],cumPlan=[],cumProj=[];
-  labels.forEach(d=>{
-    rAct+=actualByDate[d]||0;
+  /* ── Plan series (step-cumulative point objects) ── */
+  const planSeries=[];let rPlan=0;
+  planDates.filter(d=>d<=endDate).forEach(d=>{
     rPlan=Math.min(rPlan+(planByDate[d]||0),totalPlan);
-    cumPlan.push(+rPlan.toFixed(1));
-    if(d<=today){cumAct.push(rAct);cumProj.push(rAct);}
-    else{
-      cumAct.push(null);
-      const daysFrom=Math.round((new Date(d+'T12:00:00Z')-new Date(today+'T12:00:00Z'))/86400000);
-      cumProj.push(+(Math.min(totalDone+daysFrom*pace,totalPlan)).toFixed(1));
-    }
+    planSeries.push({x:d,y:+rPlan.toFixed(2)});
   });
+  if(planSeries.length&&planSeries.at(-1).x<endDate)planSeries.push({x:endDate,y:+rPlan.toFixed(2)});
+
+  /* ── Actual series (step-cumulative point objects, stops at today) ── */
+  const actSeries=[];let rAct=0;
+  actualDates.filter(d=>d<=today&&d<=endDate).forEach(d=>{
+    rAct+=(actualByDate[d]||0);
+    actSeries.push({x:d,y:+rAct.toFixed(2)});
+  });
+  if(actSeries.length&&actSeries.at(-1).x<today&&today<=endDate)actSeries.push({x:today,y:+rAct.toFixed(2)});
+
+  /* ── Projected line (2 points: today → end) ── */
+  const showProj=CPV_FILTER!=='today';
+  const projSeries=showProj?[{x:today,y:+totalDone.toFixed(2)},{x:endDate,y:+(Math.min(totalDone+projDaysLeft*pace,totalPlan)).toFixed(2)}]:[];
+
+  /* ── Reference lines ── */
+  const totalSeries=[{x:firstDate,y:+totalPlan.toFixed(2)},{x:endDate,y:+totalPlan.toFixed(2)}];
+  const todaySeries=[{x:today,y:0},{x:today,y:totalPlan*1.08}];
 
   /* ── KPIs ── */
+  const fmt=v=>isHrs?v.toFixed(1):String(Math.round(v));
   const pct=(totalDone/totalPlan*100).toFixed(1);
-  const weeklyPace=(pace*7).toFixed(1);
-  const varDays=Math.round(Math.abs(variance)/Math.max(pace,0.001));
+  const varDays=Math.round(Math.abs(variance)/pace);
   const varStr=variance>=0?`+${varDays}d ahead`:`${varDays}d behind`;
   const varC=variance>=0?'var(--done)':'#ef4444';
-  const el=document.getElementById('cpv-kpis');
-  if(el)el.innerHTML=[
-    {l:'Done / Total',v:`${totalDone}/${totalPlan}`,s:`${pct}% complete`,c:'var(--c127)'},
-    {l:'Pace (30d avg)',v:weeklyPace,s:'lessons / week',c:'var(--tx)'},
+  const kpiEl=document.getElementById('cpv-kpis');
+  if(kpiEl)kpiEl.innerHTML=[
+    {l:'Done / Total',v:`${fmt(totalDone)} / ${fmt(totalPlan)}`,s:`${pct}% complete`,c:'var(--c127)'},
+    {l:'Pace (30d avg)',v:(pace*7).toFixed(1),s:`${unit} / week`,c:'var(--tx)'},
     {l:'Plan Finish',v:ap127FmtDate(planEnd),s:'per curriculum',c:'#8b949e'},
     {l:'Projected Finish',v:ap127FmtDate(projEndDate),s:'at current pace',c:'#38bdf8'},
-    {l:'vs Plan Today',v:`${Math.abs(variance)} lessons`,s:varStr,c:varC},
+    {l:'vs Plan Today',v:`${isHrs?Math.abs(variance).toFixed(1):Math.round(Math.abs(variance))} ${unit}`,s:varStr,c:varC},
   ].map(k=>`<div class="cpv-kpi"><div class="cpv-kl">${k.l}</div><div class="cpv-kv" style="color:${k.c}">${k.v}</div><div class="cpv-ks">${k.s}</div></div>`).join('');
 
-  /* ── Today line ── */
-  const todayData=labels.map(d=>d===today?totalPlan:null);
-
   /* ── Chart ── */
-  const showProj=CPV_FILTER!=='today';
   CHARTS.ap127combined=mkC('d127-combined',{
     type:'line',
-    data:{labels,datasets:[
-      {label:'Plan',data:cumPlan,borderColor:'#cbd5e1',borderDash:[6,4],borderWidth:1.5,pointRadius:0,tension:.12,order:3},
-      {label:'Actual',data:cumAct,borderColor:'#fb923c',borderWidth:2.5,pointRadius:0,tension:.12,spanGaps:false,order:1},
-      {label:'Projected',data:showProj?cumProj:[],borderColor:'#38bdf8',borderDash:[3,3],borderWidth:1.5,pointRadius:0,tension:0,order:2},
-      {label:'Total',data:labels.map(()=>totalPlan),borderColor:'rgba(74,222,128,0.25)',borderDash:[2,5],borderWidth:1,pointRadius:0,order:4},
-      {label:'Today',data:todayData,borderColor:'rgba(245,158,11,0.7)',borderWidth:1.5,pointRadius:0,spanGaps:false,borderDash:[],order:0},
+    data:{datasets:[
+      {label:'Plan',    data:planSeries,  borderColor:'#cbd5e1',borderDash:[6,4],borderWidth:1.5,pointRadius:0,tension:0,order:3},
+      {label:'Actual',  data:actSeries,   borderColor:'#fb923c',borderWidth:2.5, pointRadius:0,tension:0,order:1},
+      {label:'Projected',data:projSeries, borderColor:'#38bdf8',borderDash:[3,3],borderWidth:1.5,pointRadius:0,tension:0,order:2},
+      {label:'Total',   data:totalSeries, borderColor:'rgba(74,222,128,0.22)',borderDash:[2,5],borderWidth:1,pointRadius:0,order:4},
+      {label:'Today',   data:todaySeries, borderColor:'rgba(245,158,11,0.6)',borderDash:[4,4],borderWidth:1.5,pointRadius:0,order:0},
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
+      parsing:{xAxisKey:'x',yAxisKey:'y'},
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{display:true,labels:{color:'#8b949e',font:{family:'JetBrains Mono',size:9},boxWidth:18,padding:10,filter:(item)=>item.text!=='Today'&&item.text!=='Total'}},
+        legend:{display:true,labels:{color:'#8b949e',font:{family:'JetBrains Mono',size:9},boxWidth:18,padding:10,filter:item=>item.text!=='Today'&&item.text!=='Total'}},
         tooltip:{callbacks:{
-          title:ctx=>ap127FmtDate(ctx[0]?.label||''),
-          label:ctx=>{const v=ctx.parsed.y;if(v==null||ctx.dataset.label==='Today')return null;return `${ctx.dataset.label}: ${Math.round(v)} lessons`;}
-        }}
+          title:ctx=>{const r=ctx[0]?.raw;return r?ap127FmtDate(r.x):'';},
+          label:ctx=>{
+            if(ctx.dataset.label==='Today'||ctx.dataset.label==='Total')return null;
+            const v=ctx.raw?.y;if(v==null)return null;
+            return `${ctx.dataset.label}: ${isHrs?v.toFixed(1)+' hrs':Math.round(v)+' lessons'}`;
+          }
+        }},
+        zoom:{
+          zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'x'},
+          pan:{enabled:true,mode:'x'},
+        }
       },
       scales:{
-        x:{ticks:{font:{family:'JetBrains Mono',size:8},color:'#6e7681',maxTicksLimit:14},grid:{color:'#21262d'}},
-        y:{beginAtZero:true,max:totalPlan+Math.ceil(totalPlan*0.02),ticks:{font:{family:'JetBrains Mono',size:9},color:'#8b949e'},grid:{color:'#21262d'}}
+        x:{type:'time',time:{unit:'month',displayFormats:{day:'d MMM',week:'d MMM',month:'MMM yy'}},
+          ticks:{font:{family:'JetBrains Mono',size:8},color:'#6e7681',maxTicksLimit:14,source:'auto'},grid:{color:'#21262d'}},
+        y:{beginAtZero:true,
+          ticks:{font:{family:'JetBrains Mono',size:9},color:'#8b949e',callback:v=>isHrs?v.toFixed(0)+'h':v},
+          grid:{color:'#21262d'}}
       }
     }
   });
