@@ -10,16 +10,16 @@ export default {
 
     const targets = [
       {
-        url: 'https://api.github.com/repos/nuguitar/AP127_NGT_001/actions/workflows/update-cache.yml/dispatches',
-        label: 'AP127_NGT_001 update-cache.yml',
+        url: 'https://api.github.com/repos/AP127CMD/DB001/actions/workflows/update-cache.yml/dispatches',
+        label: 'DB001 update-cache.yml',
       },
       {
-        url: 'https://api.github.com/repos/nuguitar/AP127_Command_Center/actions/workflows/fetch_schedule.yml/dispatches',
-        label: 'AP127_Command_Center fetch_schedule.yml',
+        url: 'https://api.github.com/repos/AP127CMD/CMD_CTR/actions/workflows/fetch_schedule.yml/dispatches',
+        label: 'CMD_CTR fetch_schedule.yml',
       },
       {
-        url: 'https://api.github.com/repos/nuguitar/AP127_V2/actions/workflows/refresh-data.yml/dispatches',
-        label: 'AP127_V2 refresh-data.yml',
+        url: 'https://api.github.com/repos/AP127CMD/CMDV2/actions/workflows/refresh-data.yml/dispatches',
+        label: 'CMDV2 refresh-data.yml',
       },
     ];
 
