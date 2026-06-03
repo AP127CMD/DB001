@@ -7,11 +7,9 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
+  group: "update-cache"
   cancel-in-progress: false
 
 jobs:
@@ -58,31 +56,3 @@ jobs:
           GH_PAT_DASHBOARDR1: ${{ secrets.GH_PAT_DASHBOARDR1 }}
           CF_WORKER_URL: ${{ secrets.CF_WORKER_URL }}
 
-      - name: Inject secrets into index.html and student.html
-        if: github.ref == 'refs/heads/main'
-        run: |
-          sed -i "s|__ADMIN_HASH__|${{ secrets.ADMIN_PASSWORD_HASH }}|g" index.html
-          sed -i "s|__RELAY_URL__|${{ secrets.RELAY_URL }}|g" index.html
-          sed -i "s|__WORKER_URL__|${{ secrets.CF_WORKER_URL }}|g" student.html
-
-      - name: Setup Pages
-        if: github.ref == 'refs/heads/main'
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-  deploy:
-    needs: update
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
