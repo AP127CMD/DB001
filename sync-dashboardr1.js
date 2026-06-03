@@ -24,7 +24,7 @@ if (!GH_PAT_DASHBOARDR1) {
 
   // Get current SHA of index.html
   const metaResp = await fetch(
-    'https://api.github.com/repos/nuguitar/AP127_DashboardR1/contents/index.html',
+    'https://api.github.com/repos/AP127CMD/DB_Share/contents/index.html',
     { headers }
   );
   if (!metaResp.ok) throw new Error(`GitHub API GET: ${metaResp.status} ${await metaResp.text()}`);
@@ -32,7 +32,7 @@ if (!GH_PAT_DASHBOARDR1) {
 
   // Push updated content
   const pushResp = await fetch(
-    'https://api.github.com/repos/nuguitar/AP127_DashboardR1/contents/index.html',
+    'https://api.github.com/repos/AP127CMD/DB_Share/contents/index.html',
     {
       method: 'PUT',
       headers,
