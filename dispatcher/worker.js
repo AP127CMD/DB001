@@ -17,6 +17,10 @@ export default {
         url: 'https://api.github.com/repos/nuguitar/AP127_Command_Center/actions/workflows/fetch_schedule.yml/dispatches',
         label: 'AP127_Command_Center fetch_schedule.yml',
       },
+      {
+        url: 'https://api.github.com/repos/nuguitar/AP127_V2/actions/workflows/refresh-data.yml/dispatches',
+        label: 'AP127_V2 refresh-data.yml',
+      },
     ];
 
     await Promise.all(
