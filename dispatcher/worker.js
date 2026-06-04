@@ -17,10 +17,8 @@ export default {
         url: 'https://api.github.com/repos/AP127CMD/CMD_CTR/actions/workflows/fetch_schedule.yml/dispatches',
         label: 'CMD_CTR fetch_schedule.yml',
       },
-      {
-        url: 'https://api.github.com/repos/AP127CMD/CMDV2/actions/workflows/refresh-data.yml/dispatches',
-        label: 'CMDV2 refresh-data.yml',
-      },
+      // CMDV2 is no longer dispatched directly — CMD_CTR triggers it after
+      // fetch_schedule.yml completes so CMDV2 always reads fresh upstream data.
     ];
 
     await Promise.all(
