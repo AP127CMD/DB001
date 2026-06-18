@@ -1,5 +1,7 @@
 # CLAUDE.md — AP127 Dashboard Project
 
+> 📚 **Master reference:** the whole AP127 ecosystem — all sites, Cloudflare Workers, data feeds, the auto-fetch pipeline, deployment, and the Telegram watchdog — is documented in **AP127_Docs**, live at **https://ap127-docs.pages.dev**.
+
 > Auto-read by Claude Code at session start. For full details see PROJECT.md.
 
 ---
