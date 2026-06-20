@@ -1,29 +1,27 @@
 # DB001 — Claude Code Context
 
+## ⚠️ Update rule — do this after EVERY code change
+1. Update the Verify section below (last change date + what changed)
+2. Update `/Users/nugui/AP127_Docs/README.md` §2.2 (add to §10 log) — then push AP127_Docs
+3. `git add . && git commit && git pull --rebase && git push`
+
 ## What this project is
-Internal admin dashboard + data pipeline for AP127 flight-training progress (4 batches: AP124, AP126, AP127, AP129).
-GitHub: `AP127CMD/DB001`. Live: `https://ap127-db001.pages.dev`. Local: `/Users/nugui/AP127_NGT_001/`.
+Admin dashboard + data pipeline for AP127 flight-training progress (AP124 / AP126 / AP127 / AP129).
+GitHub: `AP127CMD/DB001` | Live: https://ap127-db001.pages.dev | Local: `/Users/nugui/AP127_NGT_001/`
 
-## Current state
-- Active branch: main (all feature branches merged; direct-to-main workflow)
-- Last significant change: confirm via `git log --oneline -5`
+## Verify actual state — run before starting
+```bash
+git log --oneline | grep -v "chore: update cache\|Merge\|pages-build" | head -6
+```
+**Last known:** no version token (no JS cache-busting in this project); CF Pages auto-deploys on every push.
 
-## Key facts
-- `index.html` has `__RELAY_URL__` and `__ADMIN_HASH__` placeholders injected at CF Pages deploy via GitHub secrets + `sed`
-- Edit ONLY `index.html` for AP127 Detail — `build-student.js` syncs the `##AP127*##` markers to `student.html` automatically; `sync-dashboardr1.js` then pushes `student.html` to the private DB_Share repo
-- **AP129 is synthetic** — generated in `update-cache.js` (13 placeholder students), not a real CSV/data source; do not look for an AP129 sheet
-- `AUPRT*` lessons are dropped inside `parseCSV()` — they must never appear in totals or the scheduler
-- `dispatcher/` is a CF Worker (`ap127-dispatcher`) that triggers `update-cache.yml` every 5 min via GitHub Actions `workflow_dispatch`
-- Data flow: Google Sheets → Apps Script relay → `update-cache.js` (GHA) → `cache.json` (committed) + `push-to-kv.js` (CF KV)
-- Old repos `nuguitar/AP127_NGT_001` and `nuguitar/AP127_DashboardR1` are **private/archived** — use `AP127CMD/DB001` only
-
-## Update rule
-After every code change in this session:
-1. Update this file (current state section above)
-2. Update `/Users/nugui/AP127_Docs/README.md` (§2.2)
-3. `git add CLAUDE.md && git commit && git push` this repo
-4. `cd /Users/nugui/AP127_Docs && git add README.md && git commit -m "docs: ..." && git push`
+## Key facts — things that trip up new sessions
+- `index.html` has `__RELAY_URL__` + `__ADMIN_HASH__` placeholders — CF Pages injects via GitHub secrets + `sed` at deploy; do not replace them with real values in the file
+- **AP127 Detail sync — edit ONLY `index.html`** inside the `##AP127*##` comment markers; `build-student.js` auto-syncs to `student.html`; `sync-dashboardr1.js` auto-pushes to DB_Share
+- **Never declare the same `let`/`const` both inside and outside the `##AP127*##` markers** — duplicate declaration = SyntaxError that silently hangs the student page
+- **AP129 is synthetic** — 13 placeholder students generated in `update-cache.js`, no CSV feed
+- `AUPRT*` lessons dropped inside `parseCSV()` — must never appear in totals or scheduler
+- `dispatcher/`: CF Worker `ap127-dispatcher` (cron */5) triggers `update-cache.yml`; code lives in this repo
 
 ## Master reference
-Full architecture, deployment steps, secrets, and reproduce-from-scratch guide:
-https://ap127-docs.pages.dev  (source: `/Users/nugui/AP127_Docs/README.md`)
+Full architecture, deploy steps, secrets: https://ap127-docs.pages.dev  (§2.2)
