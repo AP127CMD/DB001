@@ -21,6 +21,7 @@ git log --oneline | grep -v "chore: update cache\|Merge\|pages-build" | head -6
 - **Never declare the same `let`/`const` both inside and outside the `##AP127*##` markers** — duplicate declaration = SyntaxError that silently hangs the student page
 - **AP129 is synthetic** — 13 placeholder students generated in `update-cache.js`, no CSV feed
 - `AUPRT*` lessons dropped inside `parseCSV()` — must never appear in totals or scheduler
+- **Split lesson handling (fixed 2026-06-22):** `/N` suffix records (e.g. "CDGL 10/2") are now accumulated into the base lesson's `actual_mins` instead of being dropped. Curriculum filter unchanged. See `update-cache.js` flown parsing loop.
 - `dispatcher/`: CF Worker `ap127-dispatcher` (cron */5) triggers `update-cache.yml`; code lives in this repo
 
 ## Master reference
