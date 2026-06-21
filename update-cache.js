@@ -51,10 +51,18 @@ function parseCSV(text, batch) {
     const lH = rA.slice(3), ftC = rB.slice(3), dtC = rC.slice(3);
     const flown = [];
     lH.forEach((ln, j) => {
-      if (!ln || /\/\d+$/.test(ln) || /^AUPRT/i.test(ln)) return;
+      if (!ln || /^AUPRT/i.test(ln)) return;
       const ft = (ftC[j] || "").trim(); if (!ft || !ft.includes(":")) return;
       const [h, m] = ft.split(":").map(Number);
-      flown.push({lesson: ln, actual_ft: ft, actual_mins: (h||0)*60+(m||0), date: parseDate(dtC[j]||"")});
+      const mins = (h||0)*60+(m||0);
+      if (/\/\d+$/.test(ln)) {
+        // Split continuation — accumulate hours into the base lesson record
+        const base = ln.replace(/\/\d+$/, '');
+        const existing = flown.find(r => r.lesson === base);
+        if (existing) existing.actual_mins += mins;
+        return;
+      }
+      flown.push({lesson: ln, actual_ft: ft, actual_mins: mins, date: parseDate(dtC[j]||"")});
     });
     const tot = curriculum.length, done = flown.length;
     students.push({catc_id: cid, name, batch, done, total: tot, remaining: tot-done, pct: tot ? +(done/tot*100).toFixed(1) : 0, flown, next_lesson: done < tot ? curriculum[done].lesson : "COMPLETE"});
