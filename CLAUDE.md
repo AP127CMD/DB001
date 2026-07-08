@@ -24,6 +24,7 @@ git log --oneline | grep -v "chore: update cache\|Merge\|pages-build" | head -6
 - **Split lesson handling (fixed 2026-06-22):** `/N` suffix records (e.g. "CDGL 10/2") are now accumulated into the base lesson's `actual_mins` instead of being dropped. Curriculum filter unchanged. See `update-cache.js` flown parsing loop.
 - `dispatcher/`: CF Worker `ap127-dispatcher` (cron */5) triggers `update-cache.yml`; code lives in this repo
 - **CI (2026-06-29):** `update-cache.yml` push step is race-proof — 5-attempt push loop with `git rebase -X theirs` (keeps our regenerated cache.json/student.html). Do NOT revert to plain `git pull --rebase --autostash`; rebase conflicts caused ~45 failures.
+- **CI (2026-07-08):** `GH_PAT_DASHBOARDR1` had expired (401 on every `Push student.html to AP127_DashboardR1` step) — 227 straight failures 2026-07-03→07-08, even though `cache.json`/KV/main-repo push were all succeeding fine each run (last step only). Rotated. If this workflow shows red again, check which step failed before assuming the RELAY_URL fetch is the problem — it usually isn't. See AP127_Docs §10.
 
 ## Master reference
 Full architecture, deploy steps, secrets: https://ap127-docs.pages.dev  (§2.2)
