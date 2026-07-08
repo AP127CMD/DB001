@@ -25,6 +25,7 @@ git log --oneline | grep -v "chore: update cache\|Merge\|pages-build" | head -6
 - `dispatcher/`: CF Worker `ap127-dispatcher` (cron */5) triggers `update-cache.yml`; code lives in this repo
 - **CI (2026-06-29):** `update-cache.yml` push step is race-proof — 5-attempt push loop with `git rebase -X theirs` (keeps our regenerated cache.json/student.html). Do NOT revert to plain `git pull --rebase --autostash`; rebase conflicts caused ~45 failures.
 - **CI (2026-07-08):** `GH_PAT_DASHBOARDR1` had expired (401 on every `Push student.html to AP127_DashboardR1` step) — 227 straight failures 2026-07-03→07-08, even though `cache.json`/KV/main-repo push were all succeeding fine each run (last step only). Rotated. If this workflow shows red again, check which step failed before assuming the RELAY_URL fetch is the problem — it usually isn't. See AP127_Docs §10.
+- **Alerting added (2026-07-08):** `update-cache.yml` now has `issues: write` + a "Report failure as GitHub issue" step (label `update-cache-failure`), matching CMD_CTR/CMDV2's existing pattern — previously this workflow had none, so the 4-day PAT-expiry outage above sat unnoticed. `dispatcher/worker.js` now also opens a GitHub issue (label `dispatcher-failure`, on this repo) if any target dispatch fails, deduped so it won't spam every 5 min.
 
 ## Master reference
 Full architecture, deploy steps, secrets: https://ap127-docs.pages.dev  (§2.2)
