@@ -1,0 +1,14 @@
+name = "ap127-data-api"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+
+[[kv_namespaces]]
+binding = "KV"
+id = "c5c88c813d8d4f668f6081506ad98bcd"
+preview_id = "c5c88c813d8d4f668f6081506ad98bcd"
