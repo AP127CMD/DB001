@@ -13,11 +13,12 @@ GitHub: `AP127CMD/DB001` | Live: https://ap127-db001.pages.dev | Local: `/Users/
 ```bash
 git log --oneline | grep -v "chore: update cache\|Merge\|pages-build" | head -6
 ```
-**Last known:** no version token (no JS cache-busting in this project); CF Pages auto-deploys on every push.
+**Last known:** no version token (no JS cache-busting in this project); CF Pages auto-deploys on every push. 2026-08-02 — removed the `Push student.html to AP127_DashboardR1` step from `update-cache.yml` (see below).
 
 ## Key facts — things that trip up new sessions
+- **DB_Share no longer synced from this repo (2026-08-02).** DB_Share now mirrors CMDV2's "AP127 Detail V4" tab live via a proxy in its own repo — see `AP127_V2/docs/superpowers/specs/2026-08-02-mirror-cmdv2-detail-v4-design.md`. `update-cache.yml`'s `Push student.html to AP127_DashboardR1` step (`sync-dashboardr1.js`) was removed; `student.html`/`build-student.js`/`sync-dashboardr1.js` are left in this repo **unused but untouched** per explicit user direction — don't delete them without asking again. `build-student.js`'s step still runs hourly (harmless — produces a file nothing reads anymore). `push-to-kv.js`/`AP127_STUDENT_DATA` KV are unaffected — that still feeds the shared `ap127-data-api` worker CMDV2/CMDV3/DB_Share all depend on for live progress.
 - `index.html` has `__RELAY_URL__` + `__ADMIN_HASH__` placeholders — CF Pages injects via GitHub secrets + `sed` at deploy; do not replace them with real values in the file
-- **AP127 Detail sync — edit ONLY `index.html`** inside the `##AP127*##` comment markers; `build-student.js` auto-syncs to `student.html`; `sync-dashboardr1.js` auto-pushes to DB_Share
+- **AP127 Detail sync (DB001's own admin view only now)** — edit ONLY `index.html` inside the `##AP127*##` comment markers; `build-student.js` still auto-syncs to `student.html`, but nothing downstream reads `student.html` anymore
 - **Never declare the same `let`/`const` both inside and outside the `##AP127*##` markers** — duplicate declaration = SyntaxError that silently hangs the student page
 - **AP129 is synthetic** — 13 placeholder students generated in `update-cache.js`, no CSV feed
 - `AUPRT*` lessons dropped inside `parseCSV()` — must never appear in totals or scheduler

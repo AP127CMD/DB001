@@ -64,12 +64,13 @@ jobs:
           CF_KV_NAMESPACE_ID: ${{ secrets.CF_KV_NAMESPACE_ID }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
-      - name: Push student.html to AP127_DashboardR1
-        if: github.ref == 'refs/heads/main'
-        run: node sync-dashboardr1.js
-        env:
-          GH_PAT_DASHBOARDR1: ${{ secrets.GH_PAT_DASHBOARDR1 }}
-          CF_WORKER_URL: ${{ secrets.CF_WORKER_URL }}
+      # NOTE (2026-08-02): the "Push student.html to AP127_DashboardR1" step that used to run
+      # here (sync-dashboardr1.js) was removed. DB_Share (AP127_DashboardR1) now mirrors CMDV2's
+      # "AP127 Detail V4" tab live via a same-origin proxy in its own repo
+      # (functions/mirror/[[path]].js) instead of this hourly student.html push — see
+      # AP127_V2/docs/superpowers/specs/2026-08-02-mirror-cmdv2-detail-v4-design.md. student.html/
+      # build-student.js/sync-dashboardr1.js are left in this repo untouched, just no longer
+      # invoked from this workflow.
 
       # Open a GitHub issue when any step above fails so a red run doesn't sit
       # unnoticed for days (as happened 2026-07-03→08 with an expired PAT).
