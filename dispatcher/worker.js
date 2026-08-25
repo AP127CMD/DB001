@@ -52,12 +52,27 @@ export default {
         url: 'https://api.github.com/repos/AP127CMD/DB001/actions/workflows/update-cache.yml/dispatches',
         label: 'DB001 update-cache.yml',
       },
-      {
-        url: 'https://api.github.com/repos/AP127CMD/CMD_CTR/actions/workflows/fetch_schedule.yml/dispatches',
-        label: 'CMD_CTR fetch_schedule.yml',
-      },
+      // CMD_CTR fetch_schedule.yml TEMPORARILY REMOVED 2026-08-26 — the Ops
+      // Portal now requires Google sign-in and Google's bot-detection
+      // permanently blocks a Playwright-launched browser from completing it
+      // (not fixable by retrying; see CMD_CTR/CLAUDE.md + AP127_Docs README
+      // §10, both 2026-08-25). The workflow itself is also disabled
+      // (`gh workflow disable`) so dispatching it would just 403 anyway —
+      // removed here too so THIS worker doesn't treat that 403 as a
+      // dispatcher failure and open a spurious `dispatcher-failure` issue on
+      // DB001 every time it runs. Durable fix: an Orange Pi 4 Pro running a
+      // persistent authenticated Chrome (see /Users/nugui/CLAUDE/HomeServer/)
+      // — once that's live and proven, re-add this target AND
+      // `gh workflow enable "Fetch Flight Schedule & Deploy" -R AP127CMD/CMD_CTR`.
+      // {
+      //   url: 'https://api.github.com/repos/AP127CMD/CMD_CTR/actions/workflows/fetch_schedule.yml/dispatches',
+      //   label: 'CMD_CTR fetch_schedule.yml',
+      // },
       // CMDV2 is no longer dispatched directly — CMD_CTR triggers it after
       // fetch_schedule.yml completes so CMDV2 always reads fresh upstream data.
+      // (Also paused while the above is paused — CMDV2 just won't get fresh
+      // upstream flight data until the Pi is live; its own hourly
+      // refresh-data.yml cron still runs, it just has nothing new to mirror.)
     ];
 
     const failures = [];
