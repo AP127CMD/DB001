@@ -37,6 +37,35 @@ async function reportFailure(headers, failures) {
   });
 }
 
+// Auto-close any stale open `dispatcher-failure` issue once every target
+// dispatches cleanly again. Added 2026-08-30 after finding one sitting open
+// for 3 days (#6, a one-off 504) — this worker previously had no close-on-
+// success path (unlike CMD_CTR/CMDV2's own workflows), so a single transient
+// blip's issue would silently swallow every future real alert forever, the
+// same class of bug fixed for CMD_CTR's `fetch-failure` label on 2026-07-25.
+async function closeStaleFailureIssue(headers) {
+  const repo = 'AP127CMD/DB001';
+  const label = 'dispatcher-failure';
+  const listRes = await fetch(
+    `https://api.github.com/repos/${repo}/issues?state=open&labels=${label}`,
+    { headers }
+  );
+  if (!listRes.ok) return;
+  const open = await listRes.json();
+  for (const issue of open) {
+    await fetch(`https://api.github.com/repos/${repo}/issues/${issue.number}/comments`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ body: 'Resolved — all dispatcher targets fired successfully again. Auto-closing.' }),
+    });
+    await fetch(`https://api.github.com/repos/${repo}/issues/${issue.number}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ state: 'closed' }),
+    });
+  }
+}
+
 export default {
   async scheduled(event, env, _ctx) {
     const headers = {
@@ -91,6 +120,8 @@ export default {
 
     if (failures.length > 0) {
       await reportFailure(headers, failures);
+    } else {
+      await closeStaleFailureIssue(headers);
     }
   },
 };
