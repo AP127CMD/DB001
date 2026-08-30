@@ -52,27 +52,27 @@ export default {
         url: 'https://api.github.com/repos/AP127CMD/DB001/actions/workflows/update-cache.yml/dispatches',
         label: 'DB001 update-cache.yml',
       },
-      // CMD_CTR fetch_schedule.yml TEMPORARILY REMOVED 2026-08-26 — the Ops
-      // Portal now requires Google sign-in and Google's bot-detection
-      // permanently blocks a Playwright-launched browser from completing it
-      // (not fixable by retrying; see CMD_CTR/CLAUDE.md + AP127_Docs README
-      // §10, both 2026-08-25). The workflow itself is also disabled
-      // (`gh workflow disable`) so dispatching it would just 403 anyway —
-      // removed here too so THIS worker doesn't treat that 403 as a
-      // dispatcher failure and open a spurious `dispatcher-failure` issue on
-      // DB001 every time it runs. Durable fix: an Orange Pi 4 Pro running a
-      // persistent authenticated Chrome (see /Users/nugui/CLAUDE/HomeServer/)
-      // — once that's live and proven, re-add this target AND
-      // `gh workflow enable "Fetch Flight Schedule & Deploy" -R AP127CMD/CMD_CTR`.
-      // {
-      //   url: 'https://api.github.com/repos/AP127CMD/CMD_CTR/actions/workflows/fetch_schedule.yml/dispatches',
-      //   label: 'CMD_CTR fetch_schedule.yml',
-      // },
-      // CMDV2 is no longer dispatched directly — CMD_CTR triggers it after
-      // fetch_schedule.yml completes so CMDV2 always reads fresh upstream data.
-      // (Also paused while the above is paused — CMDV2 just won't get fresh
-      // upstream flight data until the Pi is live; its own hourly
-      // refresh-data.yml cron still runs, it just has nothing new to mirror.)
+      // CMD_CTR fetch_schedule.yml RE-ENABLED 2026-08-30 — was commented out
+      // 2026-08-26 during the Google-sign-in-wall outage (see CMD_CTR/
+      // CLAUDE.md's 2026-08-26 entry). Confirmed working again 2026-08-29: a
+      // live `workflow_dispatch -f force=true` test fetched 280 flights/18
+      // dates cleanly on GitHub's own runners — the portal never actually
+      // required sign-in for anonymous access, Google's bot-detection was
+      // only ever flagging Playwright's fingerprint during the *interactive
+      // sign-in* flow specifically. GitHub Actions is now the PRIMARY fetch
+      // path again, same 5-min cadence as DB001's own target above; the
+      // Orange Pi Zero 2W (`flight-schedule-feed/pi-native/`) stays running
+      // too, as pure redundancy, not the primary any more.
+      {
+        url: 'https://api.github.com/repos/AP127CMD/CMD_CTR/actions/workflows/fetch_schedule.yml/dispatches',
+        label: 'CMD_CTR fetch_schedule.yml',
+      },
+      // CMDV2 is not dispatched directly — CMD_CTR triggers it after
+      // fetch_schedule.yml completes, so CMDV2's own SCHEDULE tab now also
+      // refreshes every 5 min (chained off this target) instead of relying
+      // on its own hourly refresh-data.yml cron, which is what left it up
+      // to an hour+ stale relative to the PROG tab (fed by DB001's target
+      // above, already 5-min) before this fix.
     ];
 
     const failures = [];
