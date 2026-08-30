@@ -101,3 +101,33 @@ jobs:
               });
             }
 
+      # Auto-close a stale update-cache-failure issue once a run succeeds
+      # again. Without this, the dedup check above (`if open.length === 0`)
+      # is permanently defeated by any issue nobody closed by hand — every
+      # later failure then alerts NOBODY. Found in the 2026-08-31 audit:
+      # issue #5 had been sitting open since 2026-08-26 doing exactly that,
+      # while this workflow ran green every 5 min throughout. Same fix, same
+      # reason, as CMD_CTR's `fetch-failure` label (2026-07-25) and the
+      # dispatcher's own `dispatcher-failure` label (2026-08-30).
+      - name: Close stale update-cache-failure issue on success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'update-cache-failure',
+            });
+            for (const issue of open) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Resolved — run ${context.runId} completed successfully. Auto-closing.`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+              });
+            }
+
