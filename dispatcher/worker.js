@@ -147,9 +147,12 @@ export default {
       // published feed has actually gone stale (see shouldDispatchFetch
       // below), which is the same takeover logic the Pi used, just moved to
       // the other side. Thresholds are deliberately asymmetric —
-      // Pi fetches at >= 6 min, cloud takes over at >= 35 min — so the cloud
-      // only steps in after the Pi has missed roughly six of its own cycles,
-      // never racing it. CMD_CTR's own `0 */12 * * *` cron is the unguarded
+      // Pi fetches at >= 6 min, cloud takes over at >= 35 min. Note the Pi's
+      // TIMER is 5 min but a real fetch takes ~12 min (measured end-to-end),
+      // and Type=oneshot means cycles never overlap — they just skip. So 35
+      // min is about TWO missed Pi fetches of headroom, not six: enough to
+      // absorb one slow or failed run without spending a CI runner, short
+      // enough to stay well inside the 60-min staleness page. Never races it. CMD_CTR's own `0 */12 * * *` cron is the unguarded
       // cloud proof run that keeps the CI path from rotting unnoticed.
       // CMDV2 is not dispatched directly — CMD_CTR triggers it after
       // fetch_schedule.yml completes, so CMDV2's own SCHEDULE tab now also
