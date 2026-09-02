@@ -1,17 +1,17 @@
-// ap127-data-api — read-only progress JSON API backing DB_Share, CMDV2, and CMDV3.
+// ap127-data-api — read-only progress JSON API backing DB_Share and CMDV2.
 // Serves the `ap127_slice` KV blob (written by DB001's update-cache.js) as CORS-locked JSON.
 //
-// 2026-07-27: was hardcoded to a single ALLOWED_ORIGIN (DB_Share only), so CMDV2's and CMDV3's
-// own live-fetch of this same worker always failed with a browser CORS error — confirmed via
-// curl with different Origin headers, all three consumers exist and are documented (README §3.2,
-// CMDV2 CLAUDE.md, CMDV3 CLAUDE.md) but only one could ever succeed. Switched to the same
+// 2026-07-27: was hardcoded to a single ALLOWED_ORIGIN (DB_Share only), so CMDV2's own
+// live-fetch of this same worker always failed with a browser CORS error — confirmed via
+// curl with different Origin headers, both consumers exist and are documented (README §3.2,
+// CMDV2 CLAUDE.md) but only one could ever succeed. Switched to the same
 // reflect-if-allowlisted pattern already used by ap127-watchdog (watchdog/src/index.js) so an
 // Access-Control-Allow-Origin header — which can only ever carry one value — can still be correct
-// for whichever of the three actually made the request.
+// for whichever of the two actually made the request.
+// 2026-09-02: CMDV3 retired — its origin removed from the allowlist.
 const ALLOWED_ORIGINS = new Set([
   'https://ap127-dashboardr1.pages.dev',
   'https://ap127-ngt2.pages.dev',
-  'https://ap127-v3.pages.dev',
 ]);
 const DEFAULT_ORIGIN = 'https://ap127-dashboardr1.pages.dev';
 
