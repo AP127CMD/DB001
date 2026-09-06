@@ -1,5 +1,15 @@
 # DB001 — Claude Code Context
 
+## ⚠️ Data plane (2026-09-06)
+- **`update-cache.yml` commits carry `[CI Skip]`** → Cloudflare Pages skips the build (status
+  `idle`, doesn't count against the 500/mo free cap). `cache.json` is served to CMDV2 via the
+  `ap127-data` proxy Worker (from raw.github). A real code push must NOT contain `[CI Skip]`.
+- **`dispatcher/worker.js` dispatches `update-cache.yml` every 15 min, not every tick** —
+  `shouldDispatchDb001(event.scheduledTime)` gates it to :00/:15/:30/:45 (~288 → ~96 runs/day).
+  Its own 5-min cron and the CMD_CTR stale-check are unchanged. `FEED_URL` stays on raw.github
+  (Worker→same-account workers.dev is blocked, CF 1042) + now sends `Cache-Control: no-cache`.
+- Design: `flight-schedule-feed/docs/superpowers/specs/2026-09-06-r2-data-plane-decoupling-design.md`.
+
 ## ⚠️ Update rule — do this after EVERY code change
 1. Update the Verify section below (last change date + what changed)
 2. Update `/Users/nugui/AP127_Docs/README.md` §2.2 (add to §10 log) — then push AP127_Docs
