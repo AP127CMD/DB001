@@ -86,15 +86,20 @@ export function shouldDispatchDb001(scheduledTimeMs) {
 
 // `fetchedAt` sits inside the first few hundred bytes of flight-data-recent.js
 // (same property the watchdog's extractFeedSig keys on), so a Range request
-// reads it for ~500 bytes instead of pulling the whole ~200 KB feed. raw.
-// githubusercontent honours Range; if it ever stops doing so we still only
-// read the prefix we asked for and the slice below is harmless.
+// reads it for ~500 bytes instead of pulling the whole ~200 KB feed.
+// 2026-09-06: served by the ap127-data Worker (proxies raw.githubusercontent.com);
+// it forwards Range and, on `Cache-Control: no-cache`, bypasses both caches so the
+// age check is never fooled by a stale read.
 const FEED_URL =
-  'https://raw.githubusercontent.com/AP127CMD/CMD_CTR/main/flight-data-recent.js';
+  'https://ap127-data.anusorn-tanmetha.workers.dev/flight-data-recent.js';
 
 async function feedAgeMinutes() {
   const res = await fetch(FEED_URL, {
-    headers: { Range: 'bytes=0-599', 'User-Agent': 'CF-AP127-Dispatcher' },
+    headers: {
+      Range: 'bytes=0-599',
+      'Cache-Control': 'no-cache',
+      'User-Agent': 'CF-AP127-Dispatcher',
+    },
     cf: { cacheTtl: 0 },
   });
   if (!res.ok && res.status !== 206) return null;   // unknown -> caller fails open
