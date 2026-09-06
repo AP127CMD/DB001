@@ -39,7 +39,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to cache.json or student.html"
           else
-            git commit -m "chore: update cache.json [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
+            git commit -m "chore: update cache.json [$(date -u +%Y-%m-%dT%H:%M:%SZ)] [CI Skip]"
             # Push with retry. On a non-fast-forward rejection, replay our commit
             # on top of the new remote tip, keeping OUR freshly regenerated files
             # (`-X theirs` auto-resolves the conflict on cache.json/student.html).
