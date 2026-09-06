@@ -73,6 +73,17 @@ async function closeStaleFailureIssue(headers) {
 // Pi has to miss ~6 consecutive cycles before GitHub Actions spends a runner.
 const STALE_TAKEOVER_MIN = 35;
 
+// DB001's cache.json only needs to track flight-data freshness (~12-18 min,
+// ~3-5 min post-Phase-2), not this Worker's own 5-min tick. Dispatch its
+// update-cache.yml every 3rd tick — at :00/:15/:30/:45 — which cuts ~288
+// GitHub Actions runs/day to ~96. update-cache.yml keeps its own hourly
+// `schedule:` cron as a safety net. `event.scheduledTime` is epoch ms; a
+// local `wrangler dev` may pass undefined -> NaN -> false (never dispatches
+// in dev), which is fine.
+export function shouldDispatchDb001(scheduledTimeMs) {
+  return new Date(scheduledTimeMs).getUTCMinutes() % 15 === 0;
+}
+
 // `fetchedAt` sits inside the first few hundred bytes of flight-data-recent.js
 // (same property the watchdog's extractFeedSig keys on), so a Range request
 // reads it for ~500 bytes instead of pulling the whole ~200 KB feed. raw.
@@ -126,41 +137,32 @@ export default {
     };
     const body = JSON.stringify({ ref: 'main' });
 
-    const targets = [
-      {
+    const targets = [];
+
+    // DB001 update-cache.yml — every 15 min (see shouldDispatchDb001 above),
+    // not every tick.
+    if (shouldDispatchDb001(event.scheduledTime)) {
+      targets.push({
         url: 'https://api.github.com/repos/AP127CMD/DB001/actions/workflows/update-cache.yml/dispatches',
         label: 'DB001 update-cache.yml',
-      },
-      // CMD_CTR fetch_schedule.yml is NO LONGER dispatched unconditionally.
-      //
-      // 2026-09-02 role inversion: the Orange Pi Zero 2W
-      // (`flight-schedule-feed/pi-native/`) is now the PRIMARY fetch path and
-      // GitHub Actions is the automatic fallback. Previously both ran every
-      // 5 min and the *Pi* held the standby gate; that meant ~110 full
-      // Playwright runs/day on GitHub's runners doing work the Pi had
-      // already done. CMD_CTR is a public repo so those minutes are free
-      // today, but at ~12 min/run it is ~40,000 min/month — 20x the private
-      // allowance, i.e. the pipeline would start costing real money the
-      // moment the repo went private.
-      //
-      // The gate now lives HERE instead: this dispatch fires only when the
-      // published feed has actually gone stale (see shouldDispatchFetch
-      // below), which is the same takeover logic the Pi used, just moved to
-      // the other side. Thresholds are deliberately asymmetric —
-      // Pi fetches at >= 6 min, cloud takes over at >= 35 min. Note the Pi's
-      // TIMER is 5 min but a real fetch takes ~12 min (measured end-to-end),
-      // and Type=oneshot means cycles never overlap — they just skip. So 35
-      // min is about TWO missed Pi fetches of headroom, not six: enough to
-      // absorb one slow or failed run without spending a CI runner, short
-      // enough to stay well inside the 60-min staleness page. Never races it. CMD_CTR's own `0 */12 * * *` cron is the unguarded
-      // cloud proof run that keeps the CI path from rotting unnoticed.
-      // CMDV2 is not dispatched directly — CMD_CTR triggers it after
-      // fetch_schedule.yml completes, so CMDV2's own SCHEDULE tab now also
-      // refreshes every 5 min (chained off this target) instead of relying
-      // on its own hourly refresh-data.yml cron, which is what left it up
-      // to an hour+ stale relative to the PROG tab (fed by DB001's target
-      // above, already 5-min) before this fix.
-    ];
+      });
+    } else {
+      console.log('DB001 update-cache: skipped (off-tick — runs at :00/:15/:30/:45)');
+    }
+
+    // CMD_CTR fetch_schedule.yml is NOT dispatched every tick either.
+    //
+    // 2026-09-02 role inversion: the Orange Pi Zero 2W
+    // (`flight-schedule-feed/pi-native/`) is the PRIMARY fetch path and GitHub
+    // Actions is the automatic fallback. The gate lives HERE: this dispatch
+    // fires only when the published feed has actually gone stale (see
+    // shouldDispatchFetch below). Thresholds are deliberately asymmetric — Pi
+    // fetches at >= 6 min, cloud takes over at >= 35 min (~two missed Pi
+    // fetches of headroom; the Pi's fetch takes ~12 min and Type=oneshot means
+    // cycles skip rather than overlap). CMD_CTR's own `0 */12 * * *` cron is
+    // the unguarded cloud proof run that keeps the CI path from rotting.
+    // CMDV2 is not dispatched directly — CMD_CTR triggers it after
+    // fetch_schedule.yml completes.
 
     const gate = await shouldDispatchFetch();
     const ageText = gate.age === null ? 'unknown' : `${Math.round(gate.age)} min`;

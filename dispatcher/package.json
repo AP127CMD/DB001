@@ -1,0 +1,13 @@
+{
+  "name": "ap127-dispatcher",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "vitest": "^1.6.0"
+  }
+}
