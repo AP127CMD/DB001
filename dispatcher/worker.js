@@ -86,12 +86,13 @@ export function shouldDispatchDb001(scheduledTimeMs) {
 
 // `fetchedAt` sits inside the first few hundred bytes of flight-data-recent.js
 // (same property the watchdog's extractFeedSig keys on), so a Range request
-// reads it for ~500 bytes instead of pulling the whole ~200 KB feed.
-// 2026-09-06: served by the ap127-data Worker (proxies raw.githubusercontent.com);
-// it forwards Range and, on `Cache-Control: no-cache`, bypasses both caches so the
-// age check is never fooled by a stale read.
+// reads it for ~500 bytes instead of pulling the whole ~200 KB feed. raw.
+// githubusercontent honours Range.
+// Stays on raw.github (NOT the ap127-data Worker) — a Worker fetching another
+// same-account *.workers.dev URL is blocked by Cloudflare (error 1042). The
+// `Cache-Control: no-cache` header below keeps Fastly from serving a stale age.
 const FEED_URL =
-  'https://ap127-data.anusorn-tanmetha.workers.dev/flight-data-recent.js';
+  'https://raw.githubusercontent.com/AP127CMD/CMD_CTR/main/flight-data-recent.js';
 
 async function feedAgeMinutes() {
   const res = await fetch(FEED_URL, {
