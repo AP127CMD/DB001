@@ -84,6 +84,17 @@ export function shouldDispatchDb001(scheduledTimeMs) {
   return new Date(scheduledTimeMs).getUTCMinutes() % 15 === 0;
 }
 
+// CMDV2 screen-feed.yml (the AP127 Smart Screen's compact screen.json, added
+// 2026-10-17) — every other tick = every 10 min. GitHub's own */10 schedule on
+// that workflow is best-effort and in practice barely fires, so this Worker is
+// the real clock (same reason DB001 is driven from here). Best-effort target:
+// a failed dispatch is logged but does NOT open a dispatcher-failure issue —
+// the desk screen labels stale data itself, and it must never add noise to the
+// pipeline alerts.
+export function shouldDispatchScreenFeed(scheduledTimeMs) {
+  return new Date(scheduledTimeMs).getUTCMinutes() % 10 === 0;
+}
+
 // `fetchedAt` sits inside the first few hundred bytes of flight-data-recent.js
 // (same property the watchdog's extractFeedSig keys on), so a Range request
 // reads it for ~500 bytes instead of pulling the whole ~200 KB feed. raw.
@@ -187,14 +198,22 @@ export default {
       );
     }
 
+    if (shouldDispatchScreenFeed(event.scheduledTime)) {
+      targets.push({
+        url: 'https://api.github.com/repos/AP127CMD/CMDV2/actions/workflows/screen-feed.yml/dispatches',
+        label: 'CMDV2 screen-feed.yml',
+        bestEffort: true,
+      });
+    }
+
     const failures = [];
     await Promise.all(
-      targets.map(async ({ url, label }) => {
+      targets.map(async ({ url, label, bestEffort }) => {
         const res = await fetch(url, { method: 'POST', headers, body });
         if (!res.ok) {
           const detail = await res.text();
           console.error(`${label} dispatch failed: ${res.status} ${detail}`);
-          failures.push({ label, status: res.status, detail });
+          if (!bestEffort) failures.push({ label, status: res.status, detail });
         } else {
           console.log(`Dispatched ${label}`);
         }

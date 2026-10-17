@@ -4,6 +4,12 @@
 - **`update-cache.yml` commits carry `[CI Skip]`** → Cloudflare Pages skips the build (status
   `idle`, doesn't count against the 500/mo free cap). `cache.json` is served to CMDV2 via the
   `ap127-data` proxy Worker (from raw.github). A real code push must NOT contain `[CI Skip]`.
+- **2026-10-17 — `dispatcher/worker.js` also dispatches CMDV2 `screen-feed.yml` every 10 min** (ticks where
+  `minute % 10 === 0`, `shouldDispatchScreenFeed`). That workflow builds `screen.json` for the AP127 Smart Screen
+  (ESP32 desk display, `~/CLAUDE/MicroProject/AP127_Screen`); GitHub's own `*/10` schedule on it barely fires.
+  **Best-effort target:** a failed dispatch is logged only — it never opens a `dispatcher-failure` issue (the screen
+  labels stale data itself). Tests: `cd dispatcher && npx vitest run` (6 pass). Needs the PAT to have Actions
+  write on CMDV2 — verified working 2026-10-17 15:20 UTC (run 39044614735).
 - **`dispatcher/worker.js` dispatches `update-cache.yml` every 15 min, not every tick** —
   `shouldDispatchDb001(event.scheduledTime)` gates it to :00/:15/:30/:45 (~288 → ~96 runs/day).
   Its own 5-min cron and the CMD_CTR stale-check are unchanged. `FEED_URL` stays on raw.github

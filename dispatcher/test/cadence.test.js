@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shouldDispatchDb001 } from '../worker.js';
+import { shouldDispatchDb001, shouldDispatchScreenFeed } from '../worker.js';
 
 const at = (h, m) => Date.UTC(2026, 8, 6, h, m, 0);
 
@@ -18,5 +18,23 @@ describe('shouldDispatchDb001', () => {
 
   it('is false for an undefined scheduledTime (dev only)', () => {
     expect(shouldDispatchDb001(undefined)).toBe(false);
+  });
+});
+
+describe('shouldDispatchScreenFeed', () => {
+  it('fires every 10 min (:00 :10 :20 :30 :40 :50)', () => {
+    for (const m of [0, 10, 20, 30, 40, 50]) {
+      expect(shouldDispatchScreenFeed(at(10, m))).toBe(true);
+    }
+  });
+
+  it('skips the odd 5-min ticks', () => {
+    for (const m of [5, 15, 25, 35, 45, 55]) {
+      expect(shouldDispatchScreenFeed(at(10, m))).toBe(false);
+    }
+  });
+
+  it('is false for an undefined scheduledTime (dev only)', () => {
+    expect(shouldDispatchScreenFeed(undefined)).toBe(false);
   });
 });
