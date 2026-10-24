@@ -1,5 +1,7 @@
 # DB001 — Claude Code Context
 
+@~/AP127_Docs/claude/ap127-ecosystem.md
+
 ## ⚠️ Data plane (2026-09-06)
 - **`update-cache.yml` commits carry `[CI Skip]`** → Cloudflare Pages skips the build (status
   `idle`, doesn't count against the 500/mo free cap). `cache.json` is served to CMDV2 via the
